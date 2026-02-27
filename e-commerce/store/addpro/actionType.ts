@@ -1,0 +1,15 @@
+export const ADD_REQUEST = "ADD_REQUEST";
+export const ADD_SUCCESS = "ADD_SUCCESS";
+export const ADD_FAILURE = "ADD_FAILURE";
+
+export const REMOVE_REQUEST = "REMOVE_REQUEST";
+export const REMOVE_SUCCESS = "REMOVE_SUCCESS";
+export const REMOVE_FAILURE = "REMOVE_FAILURE";
+
+export const UPDATE_REQUEST = "UPDATE_REQUEST";
+export const UPDATE_SUCCESS = "UPDATE_SUCCESS";
+export const UPDATE_FAILURE = "UPDATE_FAILURE";
+
+export const GET_REQUEST = "GET_REQUEST";
+export const GET_SUCCESS = "GET_SUCCESS";
+export const GET_FAILURE = "GET_FAILURE";
