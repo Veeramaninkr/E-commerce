@@ -10,3 +10,18 @@
     --font-sans: "font", sans-serif;
     --font-mono: "monospace", monospace;
 }
+
+@layer base {
+    body {
+        @apply antialiased;
+    }
+}
+
+@utility no-scrollbar {
+    &::-webkit-scrollbar {
+        display: none;
+    }
+
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}

@@ -59,3 +59,11 @@ export const createOrderFailure = (error: string) => ({
     payload: error,
 });
 
+export const addToCart = (product: any) => ({
+    type: types.ADD_TO_CART,
+    payload: product,
+});
+
+export const clearCart = () => ({
+    type: types.CLEAR_CART,
+});

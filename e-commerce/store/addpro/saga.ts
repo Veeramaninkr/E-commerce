@@ -29,7 +29,8 @@ function updateApi(payload: any) {
   return api.patch(`/products/${payload.id || payload._id}`, payload);
 }
 function getApi(payload: any) {
-  return api.get(`/products/${payload}`);
+  const url = payload ? `/products/${payload}` : "/products";
+  return api.get(url);
 }
 
 function* addRequestSaga(action: any): SagaIterator {
