@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useDispatch, useSelector } from 'react-redux'
 import { signupRequest } from '@/store/login/action'
 import { useRouter } from 'next/navigation'
+import { Mail, Lock, User } from 'lucide-react'
 
 function Signup() {
     const dispatch = useDispatch();
@@ -26,67 +27,99 @@ function Signup() {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
-            <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
-                <h1 className="text-2xl font-bold dark:text-orange-500 text-center mb-6">SIGNUP</h1>
-
-                {error && (
-                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4 text-sm">
-                        {error}
+        <div className="min-h-screen bg-[#f8fafc] dark:bg-black flex items-center justify-center p-6 text-left">
+            <div className="w-full max-w-[440px]">
+                {/* Branding Section */}
+                <div className="text-center mb-10">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-2xl shadow-sm border border-gray-100 mb-4 transition-transform hover:scale-105 duration-300">
+                        <User className="text-indigo-600 w-8 h-8" size={32} />
                     </div>
-                )}
+                    <div className="space-y-1">
+                        <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.3em] mb-2">Registration</p>
+                        <h1 className="text-3xl font-black text-gray-900 tracking-tighter uppercase leading-none">Sign Up</h1>
+                    </div>
+                </div>
 
-                <label htmlFor="name" className=' h-10 text-[13px] font-bold text-gray-400 uppercase tracking-widest ml-1'>Name</label> <br />
-                <input
-                    className="border border-gray-300 h-10 p-2 rounded-lg w-full mb-4"
-                    type="text"
-                    placeholder="Name"
-                    required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                /> <br />
+                {/* Form Card */}
+                <div className="bg-white w-full p-8 rounded-[32px] shadow-2xl shadow-indigo-100/50 border border-gray-100">
+                    <form onSubmit={(e) => { e.preventDefault(); handleSignup(); }} className="space-y-6">
+                        {error && (
+                            <div className="bg-red-50 border border-red-100 text-red-600 p-4 rounded-2xl text-sm font-semibold flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+                                <div className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">!</div>
+                                {typeof error === 'string' ? error : 'Registration failed. Please try again.'}
+                            </div>
+                        )}
 
-                <label htmlFor="email" className=' h-10 text-[13px] font-bold text-gray-400 uppercase tracking-widest ml-1'>Email</label> <br />
-                <input
-                    className="border border-gray-300 h-10 p-2 rounded-lg w-full mb-4"
-                    type="text"
-                    placeholder="Email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                /> <br />
-                <label htmlFor="password" className=' h-10 text-[13px] font-bold text-gray-400 uppercase tracking-widest ml-1'>Password</label> <br />
-                <input
-                    className="border border-gray-300 h-10 p-2 rounded-lg w-full mb-6"
-                    type="password"
-                    placeholder="Password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                />
-                <br />
+                        <div className="space-y-2">
+                            <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest ml-1 text-left block">Username</label>
+                            <div className="relative group">
+                                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-500 transition-colors" size={20} />
+                                <input
+                                    type="text"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    placeholder="Enter full name"
+                                    required
+                                    className="w-full h-14 pl-12 pr-4 bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-300 placeholder:font-bold"
+                                />
+                            </div>
+                        </div>
 
-                <label htmlFor="password" className=' h-10 text-[13px] font-bold text-gray-400 uppercase tracking-widest ml-1'> Confirm Password</label> <br />
-                <input
-                    className="border border-gray-300 h-10 p-2 rounded-lg w-full mb-6"
-                    type="password"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                />
-                <br /><br />
+                        <div className="space-y-2">
+                            <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest ml-1 text-left block">Email Address</label>
+                            <div className="relative group">
+                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-500 transition-colors" size={20} />
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="your@email.com"
+                                    required
+                                    className="w-full h-14 pl-12 pr-4 bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-300 placeholder:font-bold"
+                                />
+                            </div>
+                        </div>
 
-                <button
-                    className={`w-full h-14 bg-gray-900 hover:bg-black text-white font-bold rounded-2xl shadow-xl shadow-gray-200 transition-all duration-300 flex items-center justify-center gap-2 group ${loading ? 'opacity-70 cursor-not-allowed scale-[0.98]' : 'hover:scale-[1.02] active:scale-[0.98]'}`}
-                    onClick={handleSignup}
-                    disabled={loading}
-                >
-                    {loading ? 'Signing up...' : 'Signup'}
-                </button> <br />
+                        <div className="space-y-2">
+                            <label className="text-[13px] font-black text-gray-400 uppercase tracking-widest ml-1 text-left block">Password</label>
+                            <div className="relative group">
+                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-500 transition-colors" size={20} />
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="••••••••"
+                                    required
+                                    className="w-full h-14 pl-12 pr-4 bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 outline-none transition-all text-gray-900 font-bold placeholder:text-gray-300 placeholder:font-bold"
+                                />
+                            </div>
+                        </div>
 
-                <p className="text-center mt-4">
-                    Already have an account? <Link href="/" className="text-blue-500 hover:underline">Login</Link>
-                </p>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className={`w-full h-16 bg-gray-900 hover:bg-black text-white font-black uppercase tracking-[0.3em] text-[10px] rounded-2xl shadow-xl shadow-gray-200 transition-all duration-300 flex items-center justify-center gap-2 group ${loading ? 'opacity-70 cursor-not-allowed scale-[0.98]' : 'hover:scale-[1.02] active:scale-[0.98]'}`}
+                        >
+                            {loading ? (
+                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            ) : (
+                                <span>Create Member Account</span>
+                            )}
+                        </button>
+
+                        <div className="pt-6 border-t border-gray-50 text-center">
+                            <p className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em]">
+                                Already a member? <Link href="/" className="text-indigo-600 hover:underline ml-1">Login</Link>
+                            </p>
+                        </div>
+                    </form>
+                </div>
+
+                <div className="mt-8 text-center">
+                    <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest">
+                        Data secured with industry protocols
+                    </p>
+                </div>
             </div>
         </div>
     )

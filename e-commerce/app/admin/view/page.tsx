@@ -4,18 +4,17 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Trash2, Edit2, Loader2, Package, Search } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
-import { getRequest, removeRequest } from '@/store/addpro/action';
+import { getRequest, removeRequest, updateRequest, uploadImageRequest } from '@/store/addpro/action';
 import { RootState } from '@/store/store';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X } from 'lucide-react';
-import { updateRequest } from '@/store/addpro/action';
+import { X, Upload, Image as ImageIcon } from 'lucide-react';
 
 
 const View = () => {
 
     const dispatch = useDispatch();
     const router = useRouter();
-    const { product, loading, error } = useSelector((state: RootState) => state.addPro);
+    const { product, loading, error, uploading, uploadedImageUrl } = useSelector((state: RootState) => state.addPro);
     const { isAuthenticated, user, loading: authLoading } = useSelector((state: RootState) => state.login);
     const [search, setSearch] = useState('');
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -26,7 +25,7 @@ const View = () => {
         category: '',
         price: '',
         stock: '',
-        image: '',
+        image_url: '',
         offer: ''
     });
 
@@ -44,6 +43,12 @@ const View = () => {
     useEffect(() => {
         dispatch(getRequest("")); // Pass empty string to get all products
     }, [dispatch]);
+
+    useEffect(() => {
+        if (uploadedImageUrl) {
+            setFormData(prev => ({ ...prev, image_url: uploadedImageUrl }));
+        }
+    }, [uploadedImageUrl]);
 
     if (loading && (!product || product.length === 0)) {
         return (
@@ -63,21 +68,41 @@ const View = () => {
             category: product.category,
             price: product.price,
             stock: product.stock,
-            image: product.image,
+            image_url: product.image_url || product.image || '',
             offer: product.offer
         });
     };
-    const handleEdit = (p: any) => {
-        console.log("Edit product:", p);
-        setSelectedProduct(p);
-        setIsEditModalOpen(true);
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+        if (!validTypes.includes(file.type)) {
+            alert("Only PNG, JPG, WEBP, and GIF formats are allowed.");
+            return;
+        }
+
+        dispatch(uploadImageRequest(file));
     };
-    const handleUpdate = (p: any) => {
-        console.log("Update product:", p);
-        dispatch(updateRequest(p));
+
+    const handleUpdate = () => {
+        if (!selectedProduct) return;
+
+        const payload = {
+            ...selectedProduct,
+            name: formData.name,
+            category: formData.category,
+            price: parseFloat(formData.price),
+            stock: parseInt(formData.stock) || 0,
+            image_url: formData.image_url,
+            offer: formData.offer
+        };
+
+        dispatch(updateRequest(payload));
         setIsEditModalOpen(false);
     };
     const handleDelete = (id: string) => {
+        if (!id) return;
         if (!window.confirm('Are you sure you want to delete this product?')) return;
         dispatch(removeRequest(id));
     };
@@ -142,7 +167,7 @@ const View = () => {
                         </thead>
 
                         <tbody className="divide-y divide-gray-50">
-                            {loading ? (
+                            {loading && filteredProducts.length === 0 ? (
                                 Array.from({ length: 5 }).map((_, i) => (
                                     <tr key={i} className="animate-pulse">
                                         <td colSpan={6} className="px-6 py-6">
@@ -164,8 +189,8 @@ const View = () => {
                                     <tr key={p.id || p._id} className="hover:bg-gray-50/50 transition-all duration-300 group border-b border-gray-50 last:border-0">
                                         <td className="px-8 py-6">
                                             <div className="w-16 h-16 rounded-2xl bg-gray-50 border border-gray-100 overflow-hidden flex items-center justify-center p-2 group-hover:scale-105 transition-transform duration-500">
-                                                {p.image ? (
-                                                    <img src={p.image} alt={p.name} className="w-full h-full object-contain" />
+                                                {p.image_url || p.image ? (
+                                                    <img src={p.image_url || p.image} alt={p.name} className="w-full h-full object-contain" />
                                                 ) : (
                                                     <Package className="text-gray-200" size={24} />
                                                 )}
@@ -221,7 +246,7 @@ const View = () => {
                                                     <Edit2 size={16} strokeWidth={2.5} />
                                                 </button>
                                                 <button
-                                                    onClick={() => handleDelete(p.id || p._id)}
+                                                    onClick={(e) => { e.stopPropagation(); handleDelete(p._id || p.id); }}
                                                     className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
                                                 >
                                                     <Trash2 size={16} strokeWidth={2.5} />
@@ -278,7 +303,7 @@ const View = () => {
                             </div>
 
 
-                            <form onSubmit={(e) => { e.preventDefault(); handleUpdate(selectedProduct); }} className="flex-1 overflow-y-auto p-10 space-y-12">
+                            <form onSubmit={(e) => { e.preventDefault(); handleUpdate(); }} className="flex-1 overflow-y-auto p-10 space-y-12">
                                 <section>
                                     <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-8 flex items-center gap-3">
                                         <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
@@ -289,7 +314,6 @@ const View = () => {
                                             <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Product Title</label>
                                             <input
                                                 type="text"
-                                                required
                                                 className="w-full h-16 px-6 bg-gray-50 border border-gray-100 rounded-[20px] focus:bg-white focus:border-gray-900 outline-none transition-all text-gray-900 font-black uppercase tracking-tight text-sm placeholder:text-gray-200"
                                                 value={formData.name}
                                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -310,7 +334,6 @@ const View = () => {
                                                 <input
                                                     type="number"
                                                     step="0.01"
-                                                    required
                                                     className="w-full h-16 px-6 bg-gray-50 border border-gray-100 rounded-[20px] focus:bg-white focus:border-gray-900 outline-none transition-all text-gray-900 font-black text-sm"
                                                     value={formData.price}
                                                     onChange={(e) => setFormData({ ...formData, price: e.target.value })}
@@ -327,21 +350,53 @@ const View = () => {
                                     </h3>
                                     <div className="space-y-8">
                                         <div className="space-y-3">
-                                            <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Thumbnail Source URL</label>
-                                            <textarea
-                                                required
-                                                rows={2}
-                                                className="w-full p-6 bg-gray-50 border border-gray-100 rounded-[20px] focus:bg-white focus:border-gray-900 outline-none transition-all text-gray-900 font-medium text-xs leading-relaxed resize-none"
-                                                value={formData.image}
-                                                onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                                            />
+                                            <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-1">Product Visual *</label>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <div className="space-y-4">
+                                                    <div className="relative group/upload h-40 bg-gray-50 border-2 border-dashed border-gray-100 rounded-3xl flex flex-col items-center justify-center transition-all hover:border-indigo-500 hover:bg-white cursor-pointer overflow-hidden">
+                                                        <input
+                                                            type="file"
+                                                            className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                                                            onChange={handleImageUpload}
+                                                            accept="image/png, image/jpeg, image/jpg, image/webp"
+                                                            disabled={uploading}
+                                                        />
+                                                        {uploading ? (
+                                                            <div className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                                                        ) : formData.image_url ? (
+                                                            <img src={formData.image_url} alt="Preview" className="w-full h-full object-contain p-4" />
+                                                        ) : (
+                                                            <div className="flex flex-col items-center gap-2 opacity-30 group-hover/upload:opacity-100 transition-opacity">
+                                                                <Upload size={24} />
+                                                                <span className="text-[10px] font-black uppercase tracking-widest">Update PNG/JPG</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-4">
+                                                    <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-1 opacity-50">Manual URL</label>
+                                                    <div className="relative">
+                                                        <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300">
+                                                            <ImageIcon size={16} />
+                                                        </div>
+                                                        <input
+                                                            type="text"
+                                                            className="w-full h-14 pl-14 pr-6 bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:border-gray-900 outline-none transition-all text-gray-900 font-medium text-xs placeholder:text-gray-200"
+                                                            placeholder="HTTPS://DOMAIN.COM/IMAGE.JPG"
+                                                            value={formData.image_url}
+                                                            onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                         <div className="grid grid-cols-2 gap-8">
                                             <div className="space-y-3">
                                                 <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Stock Count</label>
                                                 <input
                                                     type="number"
-                                                    required
+
                                                     className="w-full h-16 px-6 bg-gray-50 border border-gray-100 rounded-[20px] focus:bg-white focus:border-gray-900 outline-none transition-all text-gray-900 font-black text-sm"
                                                     value={formData.stock}
                                                     onChange={(e) => setFormData({ ...formData, stock: e.target.value })}

@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   },
   description: siteConfig.description,
   icons: {
-    icon: "/favicon.ico",
+    icon: "/images.ico",
   },
 };
 
@@ -43,7 +43,6 @@ export default function RootLayout({
       >
         <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
           <div className="relative flex flex-col h-screen">
-            {/* <Navbar /> */}
             <main className="">
               {children}
             </main>

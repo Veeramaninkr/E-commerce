@@ -14,21 +14,38 @@ import { link as linkStyles } from "@heroui/theme";
 import NextLink from "next/link";
 import clsx from "clsx";
 import { ThemeSwitch } from "@/components/theme-switch";
-import { ShoppingBag, User } from 'lucide-react'
+import { ShoppingBag, User, Truck } from 'lucide-react'
 import { Button } from "@heroui/button";
 import { siteConfig } from "@/config/site";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store/store";
+import { logoutRequest } from "@/store/login/action";
 import {
   HeartFilledIcon,
   SearchIcon,
   Logo,
 } from "@/components/icons";
+import { useRouter } from "next/navigation";
 
 export const Navbar = () => {
+  const router = useRouter();
+  const dispatch = useDispatch();
   const cartState = useSelector((state: RootState) => state.order) || { items: [] };
   const cartItems = cartState.items || [];
   const cartCount = cartItems.reduce((acc: number, item: any) => acc + (item.quantity || 0), 0);
+  const trackOrder = () => {
+    router.push('/client/track');
+  }
+  const handleCart = () => {
+    router.push('/client/buy');
+  }
+  const userProfile = () => {
+    router.push('/client/user');
+  }
+  const handleLogout = () => {
+    dispatch(logoutRequest());
+    router.push('/');
+  }
 
   const searchInput = (
     <Input
@@ -57,7 +74,7 @@ export const Navbar = () => {
         <NavbarBrand as="li" className="gap-3 max-w-fit">
           <NextLink className="flex justify-start items-center gap-1" href="/">
             <Logo />
-            <p className="font-bold text-inherit uppercase tracking-tighter">EMPORIX</p>
+            <p className="font-bold text-inherit uppercase tracking-tighter">E-Commerce</p>
           </NextLink>
         </NavbarBrand>
         <ul className="hidden lg:flex gap-4 justify-start ml-2">
@@ -84,7 +101,7 @@ export const Navbar = () => {
       >
         <NavbarItem className="hidden sm:flex gap-5 items-center">
           <ThemeSwitch />
-          <div className="relative group cursor-pointer">
+          <div className="relative group cursor-pointer" onClick={handleCart}>
             <ShoppingBag className="text-default-400 group-hover:text-indigo-600 transition-colors" size={20} />
             {cartCount > 0 && (
               <span className="absolute -top-2 -right-2 w-5 h-5 bg-indigo-600 text-[10px] font-black text-white rounded-full flex items-center justify-center shadow-lg animate-in zoom-in-50 duration-300">
@@ -92,7 +109,12 @@ export const Navbar = () => {
               </span>
             )}
           </div>
-          <User className="text-default-400 cursor-pointer hover:text-indigo-600 transition-colors" size={20} />
+          <div className="relative group cursor-pointer" onClick={trackOrder}>
+            <Truck className="text-default-400 cursor-pointer hover:text-indigo-600 transition-colors" size={20} />
+          </div>
+          <div className="relative group cursor-pointer" onClick={userProfile}>
+            <User className="text-default-400 cursor-pointer hover:text-indigo-600 transition-colors" size={20} />
+          </div>
         </NavbarItem>
 
         <NavbarItem className="hidden lg:flex">{searchInput}</NavbarItem>
@@ -116,7 +138,8 @@ export const Navbar = () => {
                       ? "danger"
                       : "foreground"
                 }
-                href="#"
+                href={item.label === "Logout" ? "#" : item.href}
+                onClick={item.label === "Logout" ? (e) => { e.preventDefault(); handleLogout(); } : undefined}
                 size="lg"
               >
                 {item.label}

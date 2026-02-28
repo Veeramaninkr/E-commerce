@@ -5,7 +5,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store/store';
 import AddProduct from '../addpro/page';
 import { LayoutDashboard, PlusCircle, List, LogOut, ShieldUser, PrinterCheck, Users as UsersIcon } from 'lucide-react';
-import { logoutRequest, getMeRequest } from '@/store/login/action';
+import { logoutRequest, getMeRequest, getUsersRequest } from '@/store/login/action';
 import { fetchOrdersRequest } from '@/store/order/action';
 import View from '../view/page';
 import Orders from '../orders/page';
@@ -16,7 +16,7 @@ import Users from '../users/page';
 const AdminDashboard = () => {
     const router = useRouter();
     const dispatch = useDispatch();
-    const { isAuthenticated, user, loading } = useSelector((state: any) => state.login);
+    const { isAuthenticated, user, loading, users } = useSelector((state: any) => state.login);
     const { orders } = useSelector((state: any) => state.order);
     type TabId = 'overview' | 'add' | 'view' | 'orders' | 'users';
     const [activeTab, setActiveTab] = useState<TabId>('overview');
@@ -46,6 +46,7 @@ const AdminDashboard = () => {
             dispatch(getMeRequest());
         }
         dispatch(fetchOrdersRequest());
+        dispatch(getUsersRequest());
     }, [dispatch, isAuthenticated]);
 
 
@@ -183,9 +184,27 @@ const AdminDashboard = () => {
 
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
                                         {[
-                                            { label: 'Net Revenue', value: '$0.0k', change: orders.length > 0 ? '+0.2%' : '+0.0%', icon: LayoutDashboard, color: 'text-indigo-600' },
-                                            { label: 'Activated Orders', value: orders.length.toString(), change: orders.length > 0 ? '+0.2%' : '+0.0%', icon: PrinterCheck, color: 'text-emerald-600' },
-                                            { label: 'Unique Visitors', value: '0.0', change: orders.length > 0 ? '+0.2%' : '+0.0%', icon: ShieldUser, color: 'text-blue-600' }
+                                            {
+                                                label: 'Net Revenue',
+                                                value: `$${(orders?.reduce((acc: number, order: any) => acc + (parseFloat(order.total_amount) || 0), 0) / 1000).toFixed(1)}k`,
+                                                change: orders.length > 0 ? '+0.2%' : '+0.0%',
+                                                icon: LayoutDashboard,
+                                                color: 'text-indigo-600'
+                                            },
+                                            {
+                                                label: 'Activated Orders',
+                                                value: orders.length.toString(),
+                                                change: orders.length > 0 ? '+0.2%' : '+0.0%',
+                                                icon: PrinterCheck,
+                                                color: 'text-emerald-600'
+                                            },
+                                            {
+                                                label: 'Unique Visitors',
+                                                value: (users?.length || 0).toString(),
+                                                change: users?.length > 0 ? '+0.5%' : '+0.0%',
+                                                icon: ShieldUser,
+                                                color: 'text-blue-600'
+                                            }
                                         ].map((stat, i) => (
                                             <div key={i} className="group cursor-default">
                                                 <div className="bg-white p-10 rounded-[40px] border border-gray-100 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.03)] transition-all duration-700 hover:shadow-[0_40px_100px_-20px_rgba(0,0,0,0.07)] hover:-translate-y-3 relative overflow-hidden">

@@ -5,15 +5,16 @@ import { useDispatch, useSelector } from 'react-redux'
 import { getRequest } from '@/store/addpro/action'
 import { createOrderRequest, addToCart } from '@/store/order/action'
 import { RootState } from '@/store/store'
-import { ShoppingBag, Star, ArrowRight, Heart, CheckCircle, X, CreditCard, Ship, MapPin, Phone, User as UserIcon } from 'lucide-react'
+import { ShoppingBag, Star, ArrowRight, Heart, CheckCircle, X, CreditCard, Ship, MapPin, Phone, User as UserIcon, Mail, MessageSquare, Send, Globe } from 'lucide-react'
 import { Card, CardBody, CardFooter } from "@heroui/card"
 import { Button } from "@heroui/button"
 import { Skeleton } from "@heroui/skeleton"
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal"
-import { Input } from "@heroui/input"
+import { Input, Textarea } from "@heroui/input"
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import BuyPage from '../buy/page'
+
 
 function Page() {
     const dispatch = useDispatch();
@@ -98,7 +99,7 @@ function Page() {
                 <div className="relative h-[400px] w-full rounded-[40px] overflow-hidden mb-20 bg-gray-900 group">
                     <div className="absolute inset-0 bg-gradient-to-r from-black/80 to-transparent z-10" />
                     <img
-                        src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT5OOdmroWDpWEbbytAew7LAkKvzUYhmZZx8Q&s"
+                        src="https://i.pinimg.com/736x/b3/be/86/b3be86af376edbb6f61043c80e3df3ab.jpg"
                         className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 opacity-60"
                         alt="Summer Collection"
                     />
@@ -136,7 +137,7 @@ function Page() {
                 )}
 
                 {/* Product Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                <div id='product' className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                     {loading && products.length === 0 ? (
                         Array.from({ length: 8 }).map((_, i) => (
                             <Card key={i} className="h-[420px] rounded-[32px] overflow-hidden" shadow="sm">
@@ -182,10 +183,7 @@ function Page() {
                                 <CardFooter className="flex-col items-start gap-1 p-8 bg-white">
                                     <div className="flex items-center justify-between w-full">
                                         <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">{p.category}</span>
-                                        <div className="flex items-center gap-1.5">
-                                            <Star size={12} className="text-amber-400 fill-amber-400" />
-                                            <span className="text-xs font-black text-gray-900">4.9</span>
-                                        </div>
+
                                     </div>
                                     <h3 className="text-lg font-black text-gray-900 tracking-tight uppercase group-hover:text-indigo-600 transition-colors truncate w-full uppercase">{p.name}</h3>
                                     <div className="flex items-center justify-between w-full mt-4">
@@ -214,6 +212,150 @@ function Page() {
                         <p className="text-gray-900 font-bold uppercase tracking-[0.2em] text-sm">Synchronizing Digital Inventory...</p>
                     </div>
                 )}
+                {/* About Section */}
+                <section id="about" className="py-24 relative overflow-hidden">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                        <div className="relative group">
+                            <div className="absolute -inset-4 bg-indigo-500/5 rounded-[48px] blur-2xl group-hover:bg-indigo-500/10 transition-all duration-700" />
+                            <div className="relative h-[600px] w-full rounded-[40px] overflow-hidden shadow-2xl">
+                                <img
+                                    src="https://i.pinimg.com/1200x/de/d5/3f/ded53f0f51047a7686808d3eb4b4e143.jpg"
+                                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                                    alt="Our Craft"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                                <div className="absolute bottom-10 left-10 text-white">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.4em] mb-2">Est. 2024</p>
+                                    <h3 className="text-3xl font-black uppercase tracking-tighter">Define Your Style.</h3>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-10">
+                            <div className="space-y-4">
+                                <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.4em]">The Vision</p>
+                                <h2 className="text-5xl font-black text-gray-900 tracking-tighter uppercase leading-none">Crafting Digital <br /><span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">Excellence</span></h2>
+                            </div>
+
+                            <p className="text-lg text-gray-600 font-medium leading-relaxed max-w-xl">
+                                We believe that shopping is more than just a transaction; it's an experience of discovery and self-expression. Our curated collection brings together the pinnacle of design and contemporary aesthetics.
+                            </p>
+
+                            <div className="grid grid-cols-2 gap-8">
+                                <div className="p-8 bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-500">
+                                    <p className="text-3xl font-black text-indigo-600 mb-1">15k+</p>
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Global Clients</p>
+                                </div>
+                                <div className="p-8 bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-500">
+                                    <p className="text-3xl font-black text-indigo-600 mb-1">99%</p>
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Satisfaction</p>
+                                </div>
+                            </div>
+
+                            <Button color="primary" variant="ghost" radius="full" size="lg" className="h-16 px-10 font-black uppercase tracking-widest text-xs border-2">
+                                Learn Our Story
+                            </Button>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Contact Section */}
+                <section id="contact" className="py-24">
+                    <div className="bg-gray-900 rounded-[60px] p-8 md:p-20 overflow-hidden relative group">
+                        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2 group-hover:bg-indigo-500/20 transition-all duration-1000" />
+
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 relative z-10">
+                            <div className="space-y-12">
+                                <div className="space-y-4">
+                                    <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.4em]">Get in Touch</p>
+                                    <h2 className="text-5xl font-black text-white tracking-tighter uppercase leading-none">Let's start <br />something great</h2>
+                                </div>
+
+                                <div className="space-y-8">
+                                    <div className="flex items-center gap-6 group/item">
+                                        <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-indigo-400 group-hover/item:bg-indigo-500 group-hover/item:text-white transition-all">
+                                            <Mail size={24} />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Email Inquiry</p>
+                                            <p className="text-white font-bold tracking-tight">hello@mypage.design</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-6 group/item">
+                                        <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-indigo-400 group-hover/item:bg-indigo-500 group-hover/item:text-white transition-all">
+                                            <Phone size={24} />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Voice Support</p>
+                                            <p className="text-white font-bold tracking-tight">+91 123 456 7890</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-6 group/item">
+                                        <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-indigo-400 group-hover/item:bg-indigo-500 group-hover/item:text-white transition-all">
+                                            <Globe size={24} />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Office Location</p>
+                                            <p className="text-white font-bold tracking-tight">Creative Plaza, Floor 12, Digital City</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[40px] p-8 md:p-12 space-y-8">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Your Identity</label>
+                                        <Input
+                                            placeholder="NAME"
+                                            variant="flat"
+                                            radius="lg"
+                                            className="dark"
+                                            classNames={{
+                                                input: "font-black tracking-widest placeholder:text-gray-600",
+                                                inputWrapper: "h-14 bg-white/5 border-white/10 hover:bg-white/10"
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="space-y-3">
+                                        <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Digital Address</label>
+                                        <Input
+                                            placeholder="EMAIL"
+                                            variant="flat"
+                                            radius="lg"
+                                            className="dark"
+                                            classNames={{
+                                                input: "font-black tracking-widest placeholder:text-gray-600",
+                                                inputWrapper: "h-14 bg-white/5 border-white/10 hover:bg-white/10"
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Your Message</label>
+                                    <Textarea
+                                        placeholder="HOW CAN WE HELP YOU?"
+                                        variant="flat"
+                                        radius="lg"
+                                        minRows={4}
+                                        className="dark"
+                                        classNames={{
+                                            input: "font-black tracking-widest placeholder:text-gray-600",
+                                            inputWrapper: "bg-white/5 border-white/10 hover:bg-white/10"
+                                        }}
+                                    />
+                                </div>
+
+                                <Button color="primary" size="lg" radius="full" className="w-full h-16 font-black uppercase tracking-[0.2em] text-xs group" endContent={<Send className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" size={16} />}>
+                                    Send Transmission
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
             </main>
 
             {/* Premium Toast Notification */}

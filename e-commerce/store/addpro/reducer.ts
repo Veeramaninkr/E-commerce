@@ -11,6 +11,9 @@ import {
   GET_REQUEST,
   GET_SUCCESS,
   GET_FAILURE,
+  UPLOAD_IMAGE_REQUEST,
+  UPLOAD_IMAGE_SUCCESS,
+  UPLOAD_IMAGE_FAILURE,
 } from "./actionType";
 
 interface AddProState {
@@ -21,6 +24,8 @@ interface AddProState {
   removeSuccess: boolean;
   updateSuccess: boolean;
   getSuccess: boolean;
+  uploading: boolean;
+  uploadedImageUrl: string | null;
 }
 
 const initialState: AddProState = {
@@ -31,6 +36,8 @@ const initialState: AddProState = {
   removeSuccess: false,
   updateSuccess: false,
   getSuccess: false,
+  uploading: false,
+  uploadedImageUrl: null,
 };
 
 const addProReducer = (
@@ -51,7 +58,9 @@ const addProReducer = (
       return {
         ...state,
         loading: false,
-        product: action.payload,
+        product: Array.isArray(state.product)
+          ? [...state.product, action.payload]
+          : [action.payload],
         addSuccess: true,
         error: null,
       };
@@ -80,12 +89,16 @@ const addProReducer = (
         updateSuccess: false,
       };
     case UPDATE_SUCCESS:
+      const updatedItem = action.payload;
       return {
         ...state,
         loading: false,
-        product: state.product.map((item: any) =>
-          item._id === action.payload._id ? action.payload : item
-        ),
+        product: Array.isArray(state.product)
+          ? state.product.map((item: any) =>
+            (item.id || item._id) === (updatedItem.id || updatedItem._id) ? updatedItem : item
+          )
+          : updatedItem,
+        updateSuccess: true,
       };
     case UPDATE_FAILURE:
       return {
@@ -112,6 +125,25 @@ const addProReducer = (
       return {
         ...state,
         loading: false,
+        error: action.payload,
+      };
+    case UPLOAD_IMAGE_REQUEST:
+      return {
+        ...state,
+        uploading: true,
+        uploadedImageUrl: null,
+        error: null,
+      };
+    case UPLOAD_IMAGE_SUCCESS:
+      return {
+        ...state,
+        uploading: false,
+        uploadedImageUrl: action.payload.url,
+      };
+    case UPLOAD_IMAGE_FAILURE:
+      return {
+        ...state,
+        uploading: false,
         error: action.payload,
       };
     default:

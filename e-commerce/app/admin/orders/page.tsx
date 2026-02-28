@@ -20,6 +20,7 @@ import {
     ChevronRight,
     Search,
     CircleOff,
+    Eye,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -30,6 +31,7 @@ const OrdersPage = () => {
     const { isAuthenticated, user, loading: authLoading } = useSelector((state: RootState) => state.login);
     const [selectedOrder, setSelectedOrder] = useState<any>(null);
     const [isEditBannerOpen, setIsEditBannerOpen] = useState(false);
+    const [isViewBannerOpen, setIsViewBannerOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
 
     // Form State
@@ -79,6 +81,11 @@ const OrdersPage = () => {
             status: order.status
         });
         setIsEditBannerOpen(true);
+    };
+
+    const handleViewClick = (order: any) => {
+        setSelectedOrder(order);
+        setIsViewBannerOpen(true);
     };
 
     const handleUpdate = (e: React.FormEvent) => {
@@ -247,6 +254,12 @@ const OrdersPage = () => {
                                         <td className="px-8 py-6 text-right">
                                             <div className="flex items-center justify-end gap-1 translate-x-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-500">
                                                 <button
+                                                    onClick={() => handleViewClick(order)}
+                                                    className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+                                                >
+                                                    <Eye size={16} strokeWidth={2.5} />
+                                                </button>
+                                                <button
                                                     onClick={() => handleEditClick(order)}
                                                     className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
                                                 >
@@ -410,6 +423,130 @@ const OrdersPage = () => {
                                     </button>
                                 </div>
                             </form>
+                        </motion.div>
+                    </>
+                )}
+
+                {/* View Banner / Sidebar */}
+                {isViewBannerOpen && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsViewBannerOpen(false)}
+                            className="fixed inset-0 bg-gray-900/40 backdrop-blur-md z-40"
+                        />
+
+                        <motion.div
+                            initial={{ x: '100%' }}
+                            animate={{ x: 0 }}
+                            exit={{ x: '100%' }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                            className="fixed top-0 right-0 h-full w-full max-w-xl bg-white shadow-2xl z-50 overflow-hidden flex flex-col"
+                        >
+                            <div className="p-10 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                                <div>
+                                    <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.3em] mb-1">Logistics Intel</p>
+                                    <h2 className="text-3xl font-black text-gray-900 tracking-tighter uppercase leading-none">Shipment Analytics</h2>
+                                    <p className="text-[10px] text-gray-400 font-bold mt-2 uppercase tracking-widest">Order Ticket: {selectedOrder?.id || selectedOrder?._id || 'N/A'}</p>
+                                </div>
+                                <button
+                                    onClick={() => setIsViewBannerOpen(false)}
+                                    className="w-12 h-12 flex items-center justify-center bg-white border border-gray-100 text-gray-400 hover:text-gray-900 hover:scale-110 active:scale-95 rounded-2xl transition-all shadow-sm"
+                                >
+                                    <X size={20} strokeWidth={3} />
+                                </button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-10 space-y-12">
+                                {/* Order Status Section */}
+                                <section>
+                                    <div className={`p-6 rounded-[24px] border flex items-center justify-between ${getStatusColor(selectedOrder?.status || '')}`}>
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-xl bg-white/50 backdrop-blur flex items-center justify-center">
+                                                {getStatusIcon(selectedOrder?.status || '')}
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Deployment State</p>
+                                                <p className="text-lg font-black uppercase tracking-tight">{selectedOrder?.status}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                {/* Customer Section */}
+                                <section>
+                                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-8 flex items-center gap-3">
+                                        <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                                        Consignee Details
+                                    </h3>
+                                    <div className="grid grid-cols-2 gap-6">
+                                        <div className="p-6 bg-gray-50 rounded-[20px] border border-gray-100">
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Full Name</p>
+                                            <p className="text-sm font-black text-gray-900 uppercase tracking-tight">{selectedOrder?.user_name}</p>
+                                        </div>
+                                        <div className="p-6 bg-gray-50 rounded-[20px] border border-gray-100">
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Contact</p>
+                                            <p className="text-sm font-black text-gray-900 tracking-tight">{selectedOrder?.user_number}</p>
+                                        </div>
+                                        <div className="col-span-2 p-6 bg-gray-50 rounded-[20px] border border-gray-100">
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Registry Email</p>
+                                            <p className="text-sm font-bold text-gray-600 lowercase">{selectedOrder?.user_email}</p>
+                                        </div>
+                                        <div className="col-span-2 p-6 bg-gray-50 rounded-[20px] border border-gray-100">
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Destination</p>
+                                            <p className="text-sm font-bold text-gray-600 leading-relaxed uppercase tracking-tight">{selectedOrder?.address}, {selectedOrder?.pincode}</p>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                {/* Items Section */}
+                                <section>
+                                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-8 flex items-center gap-3">
+                                        <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                                        Cargo Inventory
+                                    </h3>
+                                    <div className="space-y-4">
+                                        {selectedOrder?.items?.map((item: any, idx: number) => (
+                                            <div key={idx} className="flex gap-4 p-4 bg-white border border-gray-100 rounded-[24px] group hover:border-gray-900 transition-all duration-300">
+                                                <div className="w-16 h-16 rounded-2xl bg-gray-50 flex items-center justify-center p-2 shrink-0 border border-gray-100">
+                                                    {item.image_url ? (
+                                                        <img src={item.image_url} alt={item.name} className="w-full h-full object-contain mix-blend-multiply" />
+                                                    ) : (
+                                                        <Package className="text-gray-200" size={24} />
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 min-w-0 py-1">
+                                                    <p className="text-xs font-black text-gray-900 tracking-tight uppercase truncate">{item.name}</p>
+                                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">ID: {item.product_id?.slice(-8).toUpperCase()}</p>
+                                                    <div className="flex items-center justify-between mt-2">
+                                                        <span className="text-[9px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-lg font-black uppercase tracking-widest">x{item.quantity}</span>
+                                                        <span className="text-sm font-black text-gray-900 tracking-tighter">${(item.price * item.quantity).toLocaleString()}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
+
+                                {/* Summary Section */}
+                                <section className="pt-8 border-t border-gray-100">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Synchronized Total</span>
+                                        <span className="text-3xl font-black text-gray-900 tracking-tighter">${parseFloat(selectedOrder?.total_amount || 0).toLocaleString()}</span>
+                                    </div>
+                                </section>
+                            </div>
+
+                            <div className="p-10 bg-gray-50/50 border-t border-gray-100">
+                                <button
+                                    onClick={() => setIsViewBannerOpen(false)}
+                                    className="w-full h-16 bg-gray-900 text-white font-black uppercase tracking-[0.3em] text-[10px] rounded-2xl shadow-xl hover:bg-black transition-all"
+                                >
+                                    Dismiss Record
+                                </button>
+                            </div>
                         </motion.div>
                     </>
                 )}

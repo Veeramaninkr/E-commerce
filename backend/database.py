@@ -9,3 +9,5 @@ database = client.EcomDB
 user_collection = database.get_collection("users")
 product_collection = database.get_collection("products")
 order_collection = database.get_collection("orders")
+asset_collection = database.get_collection("assets")
+
