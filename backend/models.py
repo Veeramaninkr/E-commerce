@@ -48,6 +48,8 @@ class ProductBase(BaseModel):
     price: float = Field(..., gt=0)
     category: str = Field(...)
     image_url: Optional[str] = None
+    image_data: Optional[bytes] = None
+    image_mime: Optional[str] = None
     stock: int = Field(default=0)
     offer: Optional[str] = None
 
@@ -63,6 +65,8 @@ class ProductUpdate(BaseModel):
     price: Optional[float] = None
     category: Optional[str] = None
     image_url: Optional[str] = None
+    image_data: Optional[bytes] = None
+    image_mime: Optional[str] = None
     stock: Optional[int] = None
     offer: Optional[str] = None
 
@@ -79,6 +83,8 @@ class BannerBase(BaseModel):
     title: str = Field(...)
     subtitle: Optional[str] = None
     image_url: str = Field(...)
+    image_data: Optional[bytes] = None
+    image_mime: Optional[str] = None
     button_text: Optional[str] = "Buy Now"
     link: Optional[str] = "#"
     active: bool = True

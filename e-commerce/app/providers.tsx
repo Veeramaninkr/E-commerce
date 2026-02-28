@@ -1,8 +1,10 @@
 "use client";
+import React, { useEffect } from "react";
+import { useDispatch } from "react-redux";
+import { getMeRequest } from "@/store/login/action";
 
 import type { ThemeProviderProps } from "next-themes";
 
-import * as React from "react";
 import { HeroUIProvider } from "@heroui/system";
 import { useRouter } from "next/navigation";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
@@ -21,14 +23,26 @@ declare module "@react-types/shared" {
   }
 }
 
+const AuthLoader = ({ children }: { children: React.ReactNode }) => {
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    dispatch(getMeRequest());
+  }, [dispatch]);
+
+  return <>{children}</>;
+};
+
 export function Providers({ children, themeProps }: ProvidersProps) {
   const router = useRouter();
 
   return (
     <StoreProvider>
-      <HeroUIProvider navigate={router.push}>
-        <NextThemesProvider {...themeProps}>{children}</NextThemesProvider>
-      </HeroUIProvider>
+      <AuthLoader>
+        <HeroUIProvider navigate={router.push}>
+          <NextThemesProvider {...themeProps}>{children}</NextThemesProvider>
+        </HeroUIProvider>
+      </AuthLoader>
     </StoreProvider>
   );
 }

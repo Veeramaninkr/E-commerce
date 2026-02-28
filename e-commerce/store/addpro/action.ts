@@ -11,6 +11,9 @@ import {
   GET_REQUEST,
   GET_SUCCESS,
   GET_FAILURE,
+  UPLOAD_IMAGE_REQUEST,
+  UPLOAD_IMAGE_SUCCESS,
+  UPLOAD_IMAGE_FAILURE,
 
 } from "./actionType";
 
@@ -69,6 +72,21 @@ export const getSuccess = (payload: any) => ({
 });
 export const getFailure = (payload: any) => ({
   type: GET_FAILURE,
+  payload,
+});
+
+export const uploadImageRequest = (payload: any) => ({
+  type: UPLOAD_IMAGE_REQUEST,
+  payload,
+});
+
+export const uploadImageSuccess = (payload: any) => ({
+  type: UPLOAD_IMAGE_SUCCESS,
+  payload,
+});
+
+export const uploadImageFailure = (payload: any) => ({
+  type: UPLOAD_IMAGE_FAILURE,
   payload,
 });
 

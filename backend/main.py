@@ -61,17 +61,29 @@ app.add_middleware(
 )
 
 async def get_current_user(request: Request):
+    # Check for token in cookies first, then in Authorization header
     token = request.cookies.get("access_token")
+    print(f"DEBUG: Cookie token found: {token is not None}")
+    
     if not token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ")[1]
+            print(f"DEBUG: Header token found: {token is not None}")
+            
+    if not token:
+        print("DEBUG: No token found in request")
         raise HTTPException(status_code=401, detail="Not authenticated")
     
     payload = auth.decode_access_token(token)
     if not payload:
+        print("DEBUG: Token decoding failed")
         raise HTTPException(status_code=401, detail="Could not validate credentials")
     
     email = payload.get("sub")
     user = await crud.user_collection.find_one({"email": email})
     if user is None:
+        print(f"DEBUG: User not found for email: {email}")
         raise HTTPException(status_code=401, detail="User not found")
     return user
 
@@ -135,10 +147,14 @@ async def read_products(skip: int = 0, limit: int = 100):
 
 @app.post("/products", response_model=models.ProductResponse)
 async def create_product(product: models.ProductCreate, current_user: dict = Depends(get_current_user)):
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
     return await crud.create_product(product)
 
 @app.patch("/products/{product_id}", response_model=models.ProductResponse)
 async def update_product(product_id: str, product: models.ProductUpdate, current_user: dict = Depends(get_current_user)):
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
     res = await crud.update_product(product_id, product.model_dump())
     if not res:
         raise HTTPException(status_code=404, detail="Product not found")
@@ -146,6 +162,8 @@ async def update_product(product_id: str, product: models.ProductUpdate, current
 
 @app.delete("/products/{product_id}")
 async def delete_product(product_id: str, current_user: dict = Depends(get_current_user)):
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
     if not await crud.delete_product(product_id):
         raise HTTPException(status_code=404, detail="Product not found")
     return {"message": "Product deleted"}
@@ -170,3 +188,34 @@ async def delete_order(order_id: str, current_user: dict = Depends(get_current_u
     if not await crud.delete_order(order_id):
         raise HTTPException(status_code=404, detail="Order not found")
     return {"message": "Order deleted"}
+
+# --- UPLOAD ---
+@app.get("/upload")
+async def upload_help():
+    return {"message": "This endpoint is for file uploads. Use POST with multipart/form-data to upload images."}
+
+@app.post("/upload")
+async def upload_image(request: Request, file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
+    _, file_extension = os.path.splitext(file.filename or "")
+    file_extension = file_extension.lower()
+    if file_extension not in [".jpg", ".jpeg", ".png", ".gif", ".webp"]:
+        raise HTTPException(status_code=400, detail="Invalid image format. Supported: JPG, PNG, WEBP, GIF.")
+    
+    try:
+        contents = await file.read()
+        asset_id = await crud.create_asset(contents, file.content_type or "image/jpeg")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to store asset: {str(e)}")
+    
+    # Return a dynamic URL based on the current request
+    base_url = str(request.base_url).rstrip("/")
+    return {"url": f"{base_url}/assets/{asset_id}"}
+
+@app.get("/assets/{asset_id}")
+async def get_asset(asset_id: str):
+    asset = await crud.get_asset_binary(asset_id)
+    if not asset:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    
+    return Response(content=asset["data"], media_type=asset["mime_type"])
+

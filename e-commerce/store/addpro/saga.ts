@@ -5,6 +5,7 @@ import {
   REMOVE_REQUEST, REMOVE_SUCCESS, REMOVE_FAILURE,
   UPDATE_REQUEST, UPDATE_SUCCESS, UPDATE_FAILURE,
   GET_REQUEST, GET_SUCCESS, GET_FAILURE,
+  UPLOAD_IMAGE_REQUEST, UPLOAD_IMAGE_SUCCESS, UPLOAD_IMAGE_FAILURE,
 } from "./actionType";
 import {
   addSuccess,
@@ -15,6 +16,8 @@ import {
   updateFailure,
   getSuccess,
   getFailure,
+  uploadImageSuccess,
+  uploadImageFailure,
 } from "./action";
 import api from "../api";
 
@@ -31,6 +34,12 @@ function updateApi(payload: any) {
 function getApi(payload: any) {
   const url = payload ? `/products/${payload}` : "/products";
   return api.get(url);
+}
+
+function uploadImageApi(file: any) {
+  const formData = new FormData();
+  formData.append('file', file);
+  return api.post("/upload", formData);
 }
 
 function* addRequestSaga(action: any): SagaIterator {
@@ -70,9 +79,20 @@ function* getRequestSaga(action: any): SagaIterator {
   }
 }
 
+function* uploadImageRequestSaga(action: any): SagaIterator {
+  try {
+    const response = yield call(uploadImageApi, action.payload);
+    yield put(uploadImageSuccess(response.data));
+  } catch (error: any) {
+    const errorMsg = error.response?.data?.detail || error.message;
+    yield put(uploadImageFailure(errorMsg));
+  }
+}
+
 export function* addProSaga(): SagaIterator {
   yield takeEvery(ADD_REQUEST, addRequestSaga);
   yield takeEvery(REMOVE_REQUEST, removeRequestSaga);
   yield takeEvery(UPDATE_REQUEST, updateRequestSaga);
   yield takeEvery(GET_REQUEST, getRequestSaga);
+  yield takeEvery(UPLOAD_IMAGE_REQUEST, uploadImageRequestSaga);
 }

@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from database import user_collection, product_collection, order_collection
+from database import user_collection, product_collection, order_collection, asset_collection
 import models
 from auth import get_password_hash
 from bson import ObjectId
@@ -119,3 +119,17 @@ async def delete_order(order_id: str):
         return False
     result = await order_collection.delete_one({"_id": ObjectId(order_id)})
     return result.deleted_count > 0
+
+# --- ASSETS (Binary) ---
+async def create_asset(data: bytes, mime_type: str):
+    asset = {
+        "data": data,
+        "mime_type": mime_type
+    }
+    result = await asset_collection.insert_one(asset)
+    return str(result.inserted_id)
+
+async def get_asset_binary(asset_id: str):
+    if not ObjectId.is_valid(asset_id):
+        return None
+    return await asset_collection.find_one({"_id": ObjectId(asset_id)})

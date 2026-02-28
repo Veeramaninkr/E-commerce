@@ -1,18 +1,17 @@
 "use client";
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { useDispatch } from 'react-redux';
-import { addRequest } from '@/store/addpro/action';
+import { addRequest, uploadImageRequest } from '@/store/addpro/action';
 import { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
-import { ArrowRight, CheckCircle } from 'lucide-react';
+import { ArrowRight, CheckCircle, Upload, Image as ImageIcon } from 'lucide-react';
 
 const AddProduct = () => {
     const router = useRouter();
     const dispatch = useDispatch();
 
-    const { loading, error, addSuccess } = useSelector((state: RootState) => state.addPro);
+    const { loading, error, addSuccess, uploading, uploadedImageUrl } = useSelector((state: RootState) => state.addPro);
     const { isAuthenticated, user, loading: authLoading } = useSelector((state: RootState) => state.login);
 
     const [name, setName] = useState("");
@@ -23,6 +22,7 @@ const AddProduct = () => {
     const [stock, setStock] = useState("");
     const [rating, setRating] = useState("");
     const [discount, setDiscount] = useState("");
+    
 
     // Authentication Guard
     useEffect(() => {
@@ -34,18 +34,6 @@ const AddProduct = () => {
             }
         }
     }, [isAuthenticated, user, authLoading, router]);
-
-    if (authLoading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                    <p className="text-gray-500 font-medium">Verifying Credentials...</p>
-                </div>
-            </div>
-        );
-    }
-
 
     useEffect(() => {
         if (addSuccess) {
@@ -59,6 +47,37 @@ const AddProduct = () => {
             setDiscount("");
         }
     }, [addSuccess]);
+
+    useEffect(() => {
+        if (uploadedImageUrl) {
+            setImage(uploadedImageUrl);
+        }
+    }, [uploadedImageUrl]);
+
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Validate file type
+        const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+        if (!validTypes.includes(file.type)) {
+            alert("Only PNG, JPG, WEBP, and GIF formats are allowed.");
+            return;
+        }
+
+        dispatch(uploadImageRequest(file));
+    };
+
+    if (authLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-gray-500 font-medium">Verifying Credentials...</p>
+                </div>
+            </div>
+        );
+    }
 
     const handleAddProduct = () => {
         if (!name || !price || !category) {
@@ -175,14 +194,55 @@ const AddProduct = () => {
                         </div>
 
                         <div className="md:col-span-2">
-                            <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-1">Thumbnail Source URL</label>
-                            <input
-                                type="text"
-                                className="w-full h-16 px-6 bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:border-gray-900 outline-none transition-all text-gray-900 font-medium text-xs placeholder:text-gray-200"
-                                placeholder="HTTPS://IMAGE-SOURCE.DOMAIN.COM/ASSET.JPG"
-                                value={image}
-                                onChange={(e) => setImage(e.target.value)}
-                            />
+                            <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-1">Product Visual *</label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-4">
+                                    <div className="relative group/upload h-48 bg-gray-50 border-2 border-dashed border-gray-100 rounded-3xl flex flex-col items-center justify-center transition-all hover:border-indigo-500 hover:bg-white cursor-pointer overflow-hidden">
+                                        <input
+                                            type="file"
+                                            className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                                            onChange={handleImageUpload}
+                                            accept="image/png, image/jpeg, image/jpg, image/webp"
+                                            disabled={uploading}
+                                        />
+                                        {uploading ? (
+                                            <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                                        ) : image ? (
+                                            <img src={image} alt="Preview" className="w-full h-full object-contain p-4" />
+                                        ) : (
+                                            <div className="flex flex-col items-center gap-2 opacity-30 group-hover/upload:opacity-100 transition-opacity">
+                                                <Upload size={32} />
+                                                <span className="text-[10px] font-black uppercase tracking-widest">Post PNG/JPG</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <p className="text-[9px] text-gray-400 font-bold uppercase tracking-[0.2em] text-center">Max size 5MB. PNG, JPG, JPEG, WEBP</p>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-1 opacity-50">Or Manual Source URL</label>
+                                    <div className="relative">
+                                        <div className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-300">
+                                            <ImageIcon size={18} />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            className="w-full h-16 pl-16 pr-6 bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:border-gray-900 outline-none transition-all text-gray-900 font-medium text-xs placeholder:text-gray-200"
+                                            placeholder="HTTPS://DOMAIN.COM/IMAGE.JPG"
+                                            value={image}
+                                            onChange={(e) => setImage(e.target.value)}
+                                        />
+                                    </div>
+                                    {image && (
+                                        <button
+                                            onClick={() => setImage("")}
+                                            className="text-[9px] font-black text-red-500 uppercase tracking-widest hover:underline ml-1"
+                                        >
+                                            Reset Asset
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
                         </div>
 
                         <div>
