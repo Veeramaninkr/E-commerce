@@ -2,9 +2,9 @@
 import React, { useEffect } from 'react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Trash2, Edit2, Loader2, Package, Search } from 'lucide-react';
+import { Trash2, Edit2, Loader2, Package, Search, Download } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
-import { getRequest, removeRequest, updateRequest, uploadImageRequest } from '@/store/addpro/action';
+import { getRequest, removeRequest, updateRequest, uploadImageRequest, downloadImageRequest } from '@/store/addpro/action';
 import { RootState } from '@/store/store';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, Upload, Image as ImageIcon } from 'lucide-react';
@@ -107,6 +107,10 @@ const View = () => {
         dispatch(removeRequest(id));
     };
 
+    const handleDownload = (imageUrl: string, fileName: string) => {
+        dispatch(downloadImageRequest({ imageUrl, fileName }));
+    };
+
     // Filter products based on search
     const products = Array.isArray(product) ? product : [];
     const filteredProducts = products.filter((p: any) =>
@@ -119,7 +123,6 @@ const View = () => {
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
                 <div className="space-y-1">
-                    <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.3em] mb-2">Inventory Management</p>
                     <h1 className="text-4xl font-black text-gray-900 tracking-tighter uppercase">Collections</h1>
                     <p className="text-sm text-gray-400 font-bold uppercase tracking-widest">Manage your catalog of {filteredProducts.length} items</p>
                 </div>
@@ -141,12 +144,11 @@ const View = () => {
             </div>
 
 
+            {/* Error Message */}
             {error && (
-                <div className="mb-6 p-4 bg-red-50 border border-red-100 text-red-700 rounded-xl shadow-sm flex items-center gap-3 animate-in fade-in slide-in-from-top-4">
-                    <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-                        <span className="font-bold text-red-600">!</span>
-                    </div>
-                    <p className="text-sm font-semibold">{typeof error === 'string' ? error : 'An error occurred while fetching products.'}</p>
+                <div className="mb-8 p-4 bg-red-50 border border-red-100 text-red-700 rounded-2xl shadow-sm flex items-center gap-3 animate-in slide-in-from-top-4">
+                    <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 font-bold text-red-600">!</div>
+                    <p className="text-sm font-semibold">{typeof error === 'string' ? error : 'Sync error.'}</p>
                 </div>
             )}
 
@@ -156,8 +158,7 @@ const View = () => {
                     <table className="w-full text-left">
                         <thead>
                             <tr className="bg-gray-50/50 border-b border-gray-50">
-                                <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Item Preview</th>
-                                <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Description</th>
+                                <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Product Detail</th>
                                 <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center">Category</th>
                                 <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center">Price Unit</th>
                                 <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center">Availability</th>
@@ -188,18 +189,8 @@ const View = () => {
                                 filteredProducts.map((p: any) => (
                                     <tr key={p.id || p._id} className="hover:bg-gray-50/50 transition-all duration-300 group border-b border-gray-50 last:border-0">
                                         <td className="px-8 py-6">
-                                            <div className="w-16 h-16 rounded-2xl bg-gray-50 border border-gray-100 overflow-hidden flex items-center justify-center p-2 group-hover:scale-105 transition-transform duration-500">
-                                                {p.image_url || p.image ? (
-                                                    <img src={p.image_url || p.image} alt={p.name} className="w-full h-full object-contain" />
-                                                ) : (
-                                                    <Package className="text-gray-200" size={24} />
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td className="px-8 py-6">
                                             <div className="flex flex-col gap-1">
                                                 <span className="text-sm font-black text-gray-900 tracking-tight uppercase">{p.name}</span>
-                                                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">REF: {(p.id || p._id || '').slice(-8)}</span>
                                             </div>
                                         </td>
                                         <td className="px-8 py-6 text-center">
@@ -213,19 +204,13 @@ const View = () => {
                                             </span>
                                         </td>
                                         <td className="px-8 py-6 text-center">
-                                            <div className="flex flex-col items-center gap-2">
-                                                <div className="flex items-center gap-2">
-                                                    <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${p.stock > 10 ? 'bg-emerald-500' : 'bg-orange-500'}`} />
-                                                    <span className={`text-xs font-black tracking-tight ${p.stock > 10 ? 'text-gray-900' : 'text-orange-600'}`}>
-                                                        {p.stock} UNITS
-                                                    </span>
-                                                </div>
-                                                <div className="w-16 h-1 bg-gray-100 rounded-full overflow-hidden">
-                                                    <div
-                                                        className={`h-full transition-all duration-1000 ${p.stock > 10 ? 'bg-emerald-500' : 'bg-orange-500'}`}
-                                                        style={{ width: `${Math.min((p.stock / 50) * 100, 100)}%` }}
-                                                    />
-                                                </div>
+                                            <div className="flex flex-col items-center gap-1">
+                                                <span className="text-sm font-black text-gray-900 tracking-tighter leading-none">
+                                                    {p.stock} UNITS
+                                                </span>
+                                                <span className={`text-[9px] font-black uppercase tracking-widest leading-none mt-1 ${p.stock > 10 ? 'text-gray-300' : 'text-orange-500'}`}>
+                                                    {p.stock > 10 ? 'In Stock' : 'Low Stock'}
+                                                </span>
                                             </div>
                                         </td>
                                         <td className="px-8 py-6 text-center">
@@ -239,6 +224,15 @@ const View = () => {
                                         </td>
                                         <td className="px-8 py-6 text-right">
                                             <div className="flex items-center justify-end gap-1 translate-x-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-500">
+                                                {(p.image_url || p.image) && (
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleDownload(p.image_url || p.image, `${p.name}.jpg`); }}
+                                                        className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
+                                                        title="Download Image"
+                                                    >
+                                                        <Download size={16} strokeWidth={2.5} />
+                                                    </button>
+                                                )}
                                                 <button
                                                     onClick={() => handleEditClick(p)}
                                                     className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
@@ -304,133 +298,128 @@ const View = () => {
 
 
                             <form onSubmit={(e) => { e.preventDefault(); handleUpdate(); }} className="flex-1 overflow-y-auto p-10 space-y-12">
-                                <section>
-                                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-8 flex items-center gap-3">
-                                        <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
-                                        Core Specifications
-                                    </h3>
-                                    <div className="space-y-8">
+                                <div className="space-y-8">
+                                    <div className="space-y-3">
+                                        <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Product Title</label>
+                                        <input
+                                            type="text"
+                                            className="w-full h-16 px-6 bg-gray-50 border border-gray-100 rounded-[20px] focus:bg-white focus:border-gray-900 outline-none transition-all text-gray-900 font-black uppercase tracking-tight text-sm placeholder:text-gray-200"
+                                            value={formData.name}
+                                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-8">
                                         <div className="space-y-3">
-                                            <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Product Title</label>
+                                            <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Category Group</label>
                                             <input
                                                 type="text"
-                                                className="w-full h-16 px-6 bg-gray-50 border border-gray-100 rounded-[20px] focus:bg-white focus:border-gray-900 outline-none transition-all text-gray-900 font-black uppercase tracking-tight text-sm placeholder:text-gray-200"
-                                                value={formData.name}
-                                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                                className="w-full h-16 px-6 bg-gray-50 border border-gray-100 rounded-[20px] text-gray-400 font-bold text-xs uppercase tracking-widest outline-none transition-all"
+                                                value={formData.category}
+                                                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                                             />
                                         </div>
-                                        <div className="grid grid-cols-2 gap-8">
-                                            <div className="space-y-3">
-                                                <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Category Group</label>
-                                                <input
-                                                    type="text"
-                                                    className="w-full h-16 px-6 bg-gray-50 border border-gray-100 rounded-[20px] text-gray-400 font-bold text-xs uppercase tracking-widest outline-none transition-all"
-                                                    value={formData.category}
-                                                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                                />
-                                            </div>
-                                            <div className="space-y-3">
-                                                <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Unit Price ($)</label>
-                                                <input
-                                                    type="number"
-                                                    step="0.01"
-                                                    className="w-full h-16 px-6 bg-gray-50 border border-gray-100 rounded-[20px] focus:bg-white focus:border-gray-900 outline-none transition-all text-gray-900 font-black text-sm"
-                                                    value={formData.price}
-                                                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </section>
-
-                                <section>
-                                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-8 flex items-center gap-3">
-                                        <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                                        Inventory & Assets
-                                    </h3>
-                                    <div className="space-y-8">
                                         <div className="space-y-3">
-                                            <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-1">Product Visual *</label>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                <div className="space-y-4">
-                                                    <div className="relative group/upload h-40 bg-gray-50 border-2 border-dashed border-gray-100 rounded-3xl flex flex-col items-center justify-center transition-all hover:border-indigo-500 hover:bg-white cursor-pointer overflow-hidden">
-                                                        <input
-                                                            type="file"
-                                                            className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                                                            onChange={handleImageUpload}
-                                                            accept="image/png, image/jpeg, image/jpg, image/webp"
-                                                            disabled={uploading}
-                                                        />
-                                                        {uploading ? (
-                                                            <div className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                                                        ) : formData.image_url ? (
-                                                            <img src={formData.image_url} alt="Preview" className="w-full h-full object-contain p-4" />
-                                                        ) : (
-                                                            <div className="flex flex-col items-center gap-2 opacity-30 group-hover/upload:opacity-100 transition-opacity">
-                                                                <Upload size={24} />
-                                                                <span className="text-[10px] font-black uppercase tracking-widest">Update PNG/JPG</span>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-
-                                                <div className="space-y-4">
-                                                    <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-1 opacity-50">Manual URL</label>
-                                                    <div className="relative">
-                                                        <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300">
-                                                            <ImageIcon size={16} />
-                                                        </div>
-                                                        <input
-                                                            type="text"
-                                                            className="w-full h-14 pl-14 pr-6 bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:border-gray-900 outline-none transition-all text-gray-900 font-medium text-xs placeholder:text-gray-200"
-                                                            placeholder="HTTPS://DOMAIN.COM/IMAGE.JPG"
-                                                            value={formData.image_url}
-                                                            onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </div>
+                                            <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Unit Price ($)</label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                className="w-full h-16 px-6 bg-gray-50 border border-gray-100 rounded-[20px] focus:bg-white focus:border-gray-900 outline-none transition-all text-gray-900 font-black text-sm"
+                                                value={formData.price}
+                                                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                                            />
                                         </div>
-                                        <div className="grid grid-cols-2 gap-8">
-                                            <div className="space-y-3">
-                                                <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Stock Count</label>
-                                                <input
-                                                    type="number"
+                                    </div>
+                                </div>
 
-                                                    className="w-full h-16 px-6 bg-gray-50 border border-gray-100 rounded-[20px] focus:bg-white focus:border-gray-900 outline-none transition-all text-gray-900 font-black text-sm"
-                                                    value={formData.stock}
-                                                    onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                                                />
+                                <div className="space-y-8">
+                                    <div className="space-y-3">
+                                        <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-1">Product Visual *</label>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="space-y-4">
+                                                <div className="relative group/upload h-40 bg-gray-50 border-2 border-dashed border-gray-100 rounded-3xl flex flex-col items-center justify-center transition-all hover:border-indigo-500 hover:bg-white cursor-pointer overflow-hidden">
+                                                    <input
+                                                        type="file"
+                                                        className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                                                        onChange={handleImageUpload}
+                                                        accept="image/png, image/jpeg, image/jpg, image/webp"
+                                                        disabled={uploading}
+                                                    />
+                                                    {uploading ? (
+                                                        <div className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                                                    ) : formData.image_url ? (
+                                                        <img
+                                                            src={formData.image_url}
+                                                            alt="Preview"
+                                                            className="w-full h-full object-contain p-4"
+                                                            onError={(e) => {
+                                                                (e.target as HTMLImageElement).src = 'https://placehold.co/400x400/f8fafc/64748b?text=Invalid+URL';
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <div className="flex flex-col items-center gap-2 opacity-30 group-hover/upload:opacity-100 transition-opacity">
+                                                            <Upload size={24} />
+                                                            <span className="text-[10px] font-black uppercase tracking-widest">Update PNG/JPG</span>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
-                                            <div className="space-y-3">
-                                                <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Promo Offer</label>
-                                                <input
-                                                    type="text"
-                                                    className="w-full h-16 px-6 bg-gray-50 border border-gray-100 rounded-[20px] focus:bg-white focus:border-gray-900 outline-none transition-all text-gray-900 font-black text-sm uppercase placeholder:text-gray-200"
-                                                    placeholder="EX: 20%"
-                                                    value={formData.offer}
-                                                    onChange={(e) => setFormData({ ...formData, offer: e.target.value })}
-                                                />
+
+                                            <div className="space-y-4">
+                                                <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-1 opacity-50">Manual URL</label>
+                                                <div className="relative">
+                                                    <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300">
+                                                        <ImageIcon size={16} />
+                                                    </div>
+                                                    <input
+                                                        type="text"
+                                                        className="w-full h-14 pl-14 pr-6 bg-gray-50 border border-gray-100 rounded-2xl focus:bg-white focus:border-gray-900 outline-none transition-all text-gray-900 font-medium text-xs placeholder:text-gray-200"
+                                                        placeholder="HTTPS://DOMAIN.COM/IMAGE.JPG"
+                                                        value={formData.image_url}
+                                                        onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </section>
+                                    <div className="grid grid-cols-2 gap-8">
+                                        <div className="space-y-3">
+                                            <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Stock Count</label>
+                                            <input
+                                                type="number"
+
+                                                className="w-full h-16 px-6 bg-gray-50 border border-gray-100 rounded-[20px] focus:bg-white focus:border-gray-900 outline-none transition-all text-gray-900 font-black text-sm"
+                                                value={formData.stock}
+                                                onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="space-y-3">
+                                            <label className="text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Promo Offer</label>
+                                            <input
+                                                type="text"
+                                                className="w-full h-16 px-6 bg-gray-50 border border-gray-100 rounded-[20px] focus:bg-white focus:border-gray-900 outline-none transition-all text-gray-900 font-black text-sm uppercase placeholder:text-gray-200"
+                                                placeholder="EX: 20%"
+                                                value={formData.offer}
+                                                onChange={(e) => setFormData({ ...formData, offer: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
 
 
-                                <div className="pt-8 border-t border-gray-100 flex gap-4">
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsEditModalOpen(false)}
-                                        className="flex-1 h-14 border border-gray-100 text-gray-400 font-bold uppercase tracking-widest text-xs rounded-2xl hover:bg-gray-50 transition-all"
-                                    >
-                                        Discard
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        className="flex-2 h-14 bg-gray-900 hover:bg-black text-white px-10 font-black uppercase tracking-widest text-xs rounded-2xl shadow-xl shadow-gray-200 transition-all active:scale-[0.98]"
-                                    >
-                                        Save Changes
-                                    </button>
+                                    <div className="pt-8 border-t border-gray-100 flex gap-4">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsEditModalOpen(false)}
+                                            className="flex-1 h-14 border border-gray-100 text-gray-400 font-bold uppercase tracking-widest text-xs rounded-2xl hover:bg-gray-50 transition-all"
+                                        >
+                                            Discard
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            className="flex-2 h-14 bg-gray-900 hover:bg-black text-white px-10 font-black uppercase tracking-widest text-xs rounded-2xl shadow-xl shadow-gray-200 transition-all active:scale-[0.98]"
+                                        >
+                                            Save Changes
+                                        </button>
+                                    </div>
                                 </div>
                             </form>
                         </motion.div>

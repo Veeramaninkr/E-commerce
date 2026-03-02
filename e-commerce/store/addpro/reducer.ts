@@ -14,6 +14,9 @@ import {
   UPLOAD_IMAGE_REQUEST,
   UPLOAD_IMAGE_SUCCESS,
   UPLOAD_IMAGE_FAILURE,
+  DOWNLOAD_IMAGE_REQUEST,
+  DOWNLOAD_IMAGE_SUCCESS,
+  DOWNLOAD_IMAGE_FAILURE,
 } from "./actionType";
 
 interface AddProState {
@@ -26,6 +29,7 @@ interface AddProState {
   getSuccess: boolean;
   uploading: boolean;
   uploadedImageUrl: string | null;
+  downloading: boolean;
 }
 
 const initialState: AddProState = {
@@ -38,6 +42,7 @@ const initialState: AddProState = {
   getSuccess: false,
   uploading: false,
   uploadedImageUrl: null,
+  downloading: false,
 };
 
 const addProReducer = (
@@ -135,15 +140,35 @@ const addProReducer = (
         error: null,
       };
     case UPLOAD_IMAGE_SUCCESS:
+      console.log(action.payload.url);
       return {
         ...state,
         uploading: false,
         uploadedImageUrl: action.payload.url,
       };
     case UPLOAD_IMAGE_FAILURE:
+      console.log(action.payload);
       return {
         ...state,
         uploading: false,
+        error: action.payload,
+      };
+    case DOWNLOAD_IMAGE_REQUEST:
+      return {
+        ...state,
+        downloading: true,
+        error: null,
+
+      };
+    case DOWNLOAD_IMAGE_SUCCESS:
+      return {
+        ...state,
+        downloading: false,
+      };
+    case DOWNLOAD_IMAGE_FAILURE:
+      return {
+        ...state,
+        downloading: false,
         error: action.payload,
       };
     default:
@@ -151,5 +176,4 @@ const addProReducer = (
   }
 
 };
-
 export default addProReducer;

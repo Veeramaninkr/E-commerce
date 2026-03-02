@@ -22,7 +22,7 @@ const AddProduct = () => {
     const [stock, setStock] = useState("");
     const [rating, setRating] = useState("");
     const [discount, setDiscount] = useState("");
-    
+
 
     // Authentication Guard
     useEffect(() => {
@@ -104,11 +104,10 @@ const AddProduct = () => {
     }
 
     return (
-        <div className="animate-in fade-in duration-700 min-h-screen bg-[#fafafa] p-4 md:p-12">
+        <div className="animate-in fade-in duration-700 min-h-screen bg-[#fafafa] p-4 md:p-1">
             <div className="max-w-4xl mx-auto">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
                     <div className="space-y-1">
-                        <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.3em] mb-2">Inventory Deployment</p>
                         <h1 className="text-4xl font-black text-gray-900 tracking-tighter uppercase">New Product</h1>
                         <p className="text-sm text-gray-400 font-bold uppercase tracking-widest">Register a new asset to the catalog</p>
                     </div>
@@ -133,12 +132,7 @@ const AddProduct = () => {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10 relative">
                         {/* Basic Info Section */}
-                        <div className="md:col-span-2">
-                            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-8 flex items-center gap-3">
-                                <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
-                                Core Specifications
-                            </h3>
-                        </div>
+
 
                         <div className="md:col-span-2">
                             <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-1">Product Title *</label>
@@ -185,13 +179,6 @@ const AddProduct = () => {
                             />
                         </div>
 
-                        {/* Media Section */}
-                        <div className="md:col-span-2 mt-8">
-                            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-8 flex items-center gap-3">
-                                <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                                Inventory & Assets
-                            </h3>
-                        </div>
 
                         <div className="md:col-span-2">
                             <label className="block text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-1">Product Visual *</label>

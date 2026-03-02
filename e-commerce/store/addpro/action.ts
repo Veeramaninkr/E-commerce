@@ -14,7 +14,9 @@ import {
   UPLOAD_IMAGE_REQUEST,
   UPLOAD_IMAGE_SUCCESS,
   UPLOAD_IMAGE_FAILURE,
-
+  DOWNLOAD_IMAGE_REQUEST,
+  DOWNLOAD_IMAGE_SUCCESS,
+  DOWNLOAD_IMAGE_FAILURE,
 } from "./actionType";
 
 export const addRequest = (payload?: any) => ({
@@ -89,4 +91,19 @@ export const uploadImageFailure = (payload: any) => ({
   type: UPLOAD_IMAGE_FAILURE,
   payload,
 });
+
+export const downloadImageRequest = (payload: { imageUrl: string; fileName: string }) => ({
+  type:DOWNLOAD_IMAGE_REQUEST,
+  payload,
+});
+
+export const downloadImageSuccess = () => ({
+  type:DOWNLOAD_IMAGE_SUCCESS,
+});
+
+export const downloadImageFailure = (payload: any) => ({
+  type:DOWNLOAD_IMAGE_FAILURE,
+  payload,
+});
+
 

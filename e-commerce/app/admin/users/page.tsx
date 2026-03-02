@@ -87,8 +87,7 @@ function Users() {
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
                 <div className="space-y-1">
-                    <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.3em] mb-2">Access Control</p>
-                    <h1 className="text-4xl font-black text-gray-900 tracking-tighter uppercase leading-none">User Directory</h1>
+                    <h1 className="text-4xl font-black text-gray-900 tracking-tighter uppercase leading-none">User List</h1>
                     <p className="text-sm text-gray-400 font-bold uppercase tracking-widest mt-2 px-1">Managing {uniqueUsers.length} registered members</p>
                 </div>
 
