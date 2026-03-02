@@ -266,8 +266,12 @@ function BuyPage() {
                                 ) : (
                                     cartItems.map((item: any, idx: number) => (
                                         <div key={idx} className="flex gap-4 items-center group">
-                                            <div className="w-20 h-20 rounded-2xl bg-white/5 p-3 border border-white/10 shrink-0 group-hover:bg-white/10 transition-colors">
-                                                <img src={item.image} alt={item.name} className="w-full h-full object-contain filter brightness-125" />
+                                            <div className="w-20 h-20 rounded-2xl bg-white/5 p-3 border border-white/10 shrink-0 group-hover:bg-white/10 transition-colors flex items-center justify-center overflow-hidden">
+                                                {item.image_url || item.image ? (
+                                                    <img src={item.image_url || item.image} alt={item.name} className="w-full h-full object-contain filter brightness-110" />
+                                                ) : (
+                                                    <ShoppingBag className="text-gray-600" size={24} />
+                                                )}
                                             </div>
                                             <div className="min-w-0 flex-1 text-left">
                                                 <p className="text-xs font-black text-white truncate uppercase tracking-tight">{item.name}</p>
@@ -286,7 +290,7 @@ function BuyPage() {
                                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Synchronized Total</span>
                                     <span className="text-3xl font-black tracking-tighter">${totalAmount.toLocaleString()}</span>
                                 </div>
-                                
+
                             </div>
                         </div>
                     </div>

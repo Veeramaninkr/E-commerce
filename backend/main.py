@@ -219,3 +219,14 @@ async def get_asset(asset_id: str):
     
     return Response(content=asset["data"], media_type=asset["mime_type"])
 
+# --- FEEDBACK ---
+@app.post("/feedback", response_model=models.FeedbackResponse)
+async def submit_feedback(feedback: models.FeedbackCreate, current_user: dict = Depends(get_current_user)):
+    return await crud.create_feedback(feedback)
+
+@app.get("/feedback", response_model=List[models.FeedbackResponse])
+async def read_feedbacks(current_user: dict = Depends(get_current_user)):
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return await crud.get_feedbacks()
+

@@ -52,7 +52,6 @@ function Page() {
                             <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform duration-300" />
                             Go Back
                         </button>
-                        <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.3em]">Client Profile</p>
                         <h1 className="text-4xl font-black text-gray-900 tracking-tighter uppercase">My Account</h1>
                         {user?.name && (
                             <p className="text-sm text-gray-400 font-bold uppercase tracking-widest">Logged in as {user.name}</p>

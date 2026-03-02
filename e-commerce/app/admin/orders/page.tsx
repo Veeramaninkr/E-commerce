@@ -137,7 +137,6 @@ const OrdersPage = () => {
             {/* Header Section */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-12">
                 <div className="space-y-1">
-                    <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.3em] mb-2">Logistics Control</p>
                     <h1 className="text-4xl font-black text-gray-900 tracking-tighter uppercase">Order Hub</h1>
                     <p className="text-sm text-gray-400 font-bold uppercase tracking-widest">Tracking {filteredOrders.length} active shipments</p>
                 </div>
@@ -211,7 +210,6 @@ const OrdersPage = () => {
                                                 </div>
                                                 <div className="flex flex-col min-w-0 gap-1">
                                                     <span className="text-sm font-black text-gray-900 tracking-tight uppercase">{order.user_name}</span>
-                                                    <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">ID: {(order.id || order._id || '').slice(-8).toUpperCase()}</span>
                                                 </div>
                                             </div>
                                         </td>
@@ -509,20 +507,15 @@ const OrdersPage = () => {
                                     </h3>
                                     <div className="space-y-4">
                                         {selectedOrder?.items?.map((item: any, idx: number) => (
-                                            <div key={idx} className="flex gap-4 p-4 bg-white border border-gray-100 rounded-[24px] group hover:border-gray-900 transition-all duration-300">
-                                                <div className="w-16 h-16 rounded-2xl bg-gray-50 flex items-center justify-center p-2 shrink-0 border border-gray-100">
-                                                    {item.image_url ? (
-                                                        <img src={item.image_url} alt={item.name} className="w-full h-full object-contain mix-blend-multiply" />
-                                                    ) : (
-                                                        <Package className="text-gray-200" size={24} />
-                                                    )}
-                                                </div>
-                                                <div className="flex-1 min-w-0 py-1">
-                                                    <p className="text-xs font-black text-gray-900 tracking-tight uppercase truncate">{item.name}</p>
-                                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">ID: {item.product_id?.slice(-8).toUpperCase()}</p>
-                                                    <div className="flex items-center justify-between mt-2">
-                                                        <span className="text-[9px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-lg font-black uppercase tracking-widest">x{item.quantity}</span>
-                                                        <span className="text-sm font-black text-gray-900 tracking-tighter">${(item.price * item.quantity).toLocaleString()}</span>
+                                            <div key={idx} className="flex flex-col gap-3 p-5 bg-white border border-gray-100 rounded-[28px] hover:border-gray-300 transition-all duration-300">
+                                                <div className="flex items-center justify-between gap-4">
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="text-sm font-black text-gray-900 tracking-tight uppercase truncate leading-none">{item.name}</p>
+                                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-2 leading-none">ID: {item.product_id?.slice(-8).toUpperCase()}</p>
+                                                    </div>
+                                                    <div className="flex flex-col items-end gap-2">
+                                                        <span className="text-[10px] bg-gray-50 border border-gray-100 text-gray-400 px-2.5 py-1 rounded-xl font-black uppercase tracking-widest leading-none">x{item.quantity}</span>
+                                                        <span className="text-base font-black text-gray-900 tracking-tighter leading-none">${(item.price * item.quantity).toLocaleString()}</span>
                                                     </div>
                                                 </div>
                                             </div>

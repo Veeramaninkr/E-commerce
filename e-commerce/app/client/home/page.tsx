@@ -106,7 +106,6 @@ function Page() {
                     <div className="absolute top-1/2 left-16 -translate-y-1/2 z-20 max-w-xl space-y-6 text-white text-left">
                         <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md rounded-full border border-white/20">
                             <span className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.3em]">New Season Arrival</span>
                         </div>
                         <h1 className="text-6xl font-black tracking-tighter leading-none uppercase">
                             Welcome to <br />
@@ -173,8 +172,15 @@ function Page() {
                                     )}
 
                                     <div className="w-full h-full bg-gray-50 flex items-center justify-center p-8 group-hover:scale-105 transition-transform duration-1000">
-                                        {p.image || p.image_url ? (
-                                            <img src={p.image || p.image_url} alt={p.name} className="w-full h-full object-contain mix-blend-multiply" />
+                                        {p.image_url || p.image ? (
+                                            <img
+                                                src={p.image_url || p.image}
+                                                alt={p.name}
+                                                className="w-full h-full object-contain mix-blend-multiply hover:scale-110 transition-transform duration-700"
+                                                onError={(e) => {
+                                                    (e.target as HTMLImageElement).src = 'https://placehold.co/400x400/f8fafc/64748b?text=Image+Unavailable';
+                                                }}
+                                            />
                                         ) : (
                                             <ShoppingBag className="text-gray-200" size={64} />
                                         )}

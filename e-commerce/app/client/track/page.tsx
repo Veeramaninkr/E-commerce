@@ -22,7 +22,9 @@ import {
   Eye,
   XCircle,
   ArrowLeft,
+  MessageSquare,
 } from 'lucide-react';
+import { submitFeedbackRequest, resetFeedbackStatus } from '@/store/feedback/action';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 
@@ -35,6 +37,17 @@ const OrdersPage = () => {
   const [isViewBannerOpen, setIsViewBannerOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Feedback State
+  const { success: feedbackSuccess, loading: feedbackLoading, error: feedbackError } = useSelector((state: any) => state.feedback);
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
+  const [feedbackData, setFeedbackData] = useState({
+    order_id: '',
+    product_id: '',
+    product_name: '',
+    product_image: '',
+    complaint: ''
+  });
+
   useEffect(() => {
     dispatch(fetchOrdersRequest());
   }, [dispatch]);
@@ -45,6 +58,14 @@ const OrdersPage = () => {
       router.push('/');
     }
   }, [isAuthenticated, authLoading, router]);
+
+  useEffect(() => {
+    if (feedbackSuccess) {
+      alert("Complaint submitted successfully");
+      setIsFeedbackModalOpen(false);
+      dispatch(resetFeedbackStatus());
+    }
+  }, [feedbackSuccess, dispatch]);
 
   if ((loading && orders.length === 0) || authLoading) {
     return (
@@ -66,6 +87,28 @@ const OrdersPage = () => {
     if (window.confirm("ARE YOU SURE YOU WANT TO CANCEL THIS SHIPMENT?")) {
       dispatch(updateOrderRequest(orderId, { status: 'cancelled' }));
     }
+  };
+
+  const handleOpenFeedback = (order: any, item: any) => {
+    setFeedbackData({
+      order_id: order.id || order._id,
+      product_id: item.product_id,
+      product_name: item.name,
+      product_image: item.image_url || '',
+      complaint: ''
+    });
+    setIsFeedbackModalOpen(true);
+  };
+
+  const handleSubmitFeedback = () => {
+    if (!feedbackData.complaint.trim()) {
+      alert("Please enter your complaint");
+      return;
+    }
+    dispatch(submitFeedbackRequest({
+      ...feedbackData,
+      user_email: user?.email || ''
+    }));
   };
 
   const userOrders = orders.filter((order: any) =>
@@ -292,8 +335,8 @@ const OrdersPage = () => {
                           className="flex items-center gap-3 bg-white p-3 rounded-xl border border-gray-100 shadow-sm min-w-[200px]"
                         >
                           <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
-                            {item.image_url ? (
-                              <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                            {item.image_url || item.image ? (
+                              <img src={item.image_url || item.image} alt={item.name} className="w-full h-full object-cover" />
                             ) : (
                               <Package className="text-gray-400" size={24} />
                             )}
@@ -302,6 +345,15 @@ const OrdersPage = () => {
                             <p className="text-xs font-bold text-gray-900 uppercase tracking-tight line-clamp-1">{item.name}</p>
                             <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{item.quantity} x ₹{item.price}</p>
                           </div>
+                          {order.status?.toLowerCase() === 'delivered' && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleOpenFeedback(order, item); }}
+                              className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-lg transition-all"
+                              title="File Complaint"
+                            >
+                              <MessageSquare size={16} />
+                            </button>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -416,8 +468,8 @@ const OrdersPage = () => {
                   {selectedOrder.items?.map((item: any, index: number) => (
                     <div key={index} className="flex items-center gap-4 p-3 bg-white rounded-xl border border-gray-100 hover:border-indigo-200 transition-colors duration-300">
                       <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-50 border border-gray-100 shrink-0">
-                        {item.image_url ? (
-                          <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                        {item.image_url || item.image ? (
+                          <img src={item.image_url || item.image} alt={item.name} className="w-full h-full object-cover" />
                         ) : (
                           <Package className="text-gray-400" size={24} />
                         )}
@@ -426,6 +478,15 @@ const OrdersPage = () => {
                         <p className="text-xs font-bold text-gray-900 uppercase tracking-tight line-clamp-1">{item.name}</p>
                         <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{item.quantity} x ₹{item.price}</p>
                       </div>
+                      {selectedOrder.status?.toLowerCase() === 'delivered' && (
+                        <button
+                          onClick={() => handleOpenFeedback(selectedOrder, item)}
+                          className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition-all duration-300 group/btn"
+                        >
+                          <MessageSquare size={14} className="group-hover/btn:scale-110 transition-transform" />
+                          <span className="text-[10px] font-black uppercase tracking-widest">Report Issue</span>
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -450,6 +511,84 @@ const OrdersPage = () => {
                     Cancel Shipment
                   </button>
                 )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Feedback Modal */}
+      <AnimatePresence>
+        {isFeedbackModalOpen && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="w-full max-w-lg bg-white rounded-[32px] shadow-2xl overflow-hidden border border-gray-100"
+            >
+              <div className="p-8 border-b border-gray-50 bg-gray-50/50 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600">
+                    <MessageSquare size={24} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.3em] mb-1">Customer Support</p>
+                    <h3 className="text-xl font-black text-gray-900 uppercase tracking-tighter">File a Complaint</h3>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsFeedbackModalOpen(false)}
+                  className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-gray-900 hover:bg-white rounded-xl transition-all"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="p-8 space-y-6">
+                <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Concerned Product</p>
+                  <p className="text-sm font-black text-gray-900 uppercase tracking-tight">{feedbackData.product_name}</p>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-2 overflow-hidden text-ellipsis whitespace-nowrap">Order ID: {feedbackData.order_id}</p>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Describe the issue</label>
+                  <textarea
+                    rows={4}
+                    placeholder="PLEASE PROVIDE DETAILS ABOUT YOUR COMPLAINT..."
+                    value={feedbackData.complaint}
+                    onChange={(e) => setFeedbackData({ ...feedbackData, complaint: e.target.value })}
+                    className="w-full p-6 bg-gray-50 border border-gray-100 rounded-3xl focus:bg-white focus:border-indigo-500 outline-none transition-all text-sm font-bold placeholder:text-gray-300 resize-none shadow-inner"
+                  />
+                </div>
+
+                {feedbackError && (
+                  <div className="p-4 bg-red-50 border border-red-100 text-red-600 rounded-xl text-xs font-bold uppercase tracking-tight flex items-center gap-2">
+                    <div className="w-2 h-2 bg-red-600 rounded-full animate-pulse" />
+                    {feedbackError}
+                  </div>
+                )}
+              </div>
+
+              <div className="p-8 bg-gray-50/50 border-t border-gray-100 flex gap-4">
+                <button
+                  onClick={() => setIsFeedbackModalOpen(false)}
+                  className="flex-1 py-4 text-xs font-black text-gray-400 uppercase tracking-widest hover:text-gray-900 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSubmitFeedback}
+                  disabled={feedbackLoading}
+                  className="flex-[2] py-4 bg-gray-900 hover:bg-black text-white text-xs font-black uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-gray-200 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {feedbackLoading ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    "Submit Complaint"
+                  )}
+                </button>
               </div>
             </motion.div>
           </div>

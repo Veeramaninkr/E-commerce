@@ -138,3 +138,17 @@ class OrderResponse(OrderBase):
 
 class UserRoleUpdate(BaseModel):
     role: str
+
+class FeedbackCreate(BaseModel):
+    order_id: str
+    product_id: str
+    product_name: str
+    product_image: Optional[str] = None
+    user_email: EmailStr
+    complaint: str
+
+class FeedbackResponse(FeedbackCreate):
+    id: Optional[PyObjectId] = Field(alias="_id", default=None)
+
+    class Config:
+        populate_by_name = True

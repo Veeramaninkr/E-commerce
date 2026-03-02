@@ -24,31 +24,15 @@ export const siteConfig = {
   navMenuItems: [
     {
       label: "Profile",
-      href: "/profile",
+      href: "/client/user",
     },
     {
       label: "Dashboard",
-      href: "/dashboard",
+      href: "/admin/dashboard",
     },
     {
-      label: "Projects",
-      href: "/projects",
-    },
-    {
-      label: "Team",
-      href: "/team",
-    },
-    {
-      label: "Calendar",
-      href: "/calendar",
-    },
-    {
-      label: "Settings",
-      href: "/settings",
-    },
-    {
-      label: "Help & Feedback",
-      href: "/help-feedback",
+      label: "Track Orders",
+      href: "/client/track",
     },
     {
       label: "Logout",

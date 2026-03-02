@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from database import user_collection, product_collection, order_collection, asset_collection
+from database import user_collection, product_collection, order_collection, asset_collection, feedback_collection
 import models
 from auth import get_password_hash
 from bson import ObjectId
@@ -44,6 +44,8 @@ async def get_products(skip: int = 0, limit: int = 100):
     products = []
     cursor = product_collection.find().skip(skip).limit(limit)
     async for product in cursor:
+        if "image" in product and "image_url" not in product:
+            product["image_url"] = product["image"]
         products.append(product)
     return products
 
@@ -95,7 +97,7 @@ async def create_order(order: models.OrderCreate):
         if product:
             item["name"] = product["name"]
             item["price"] = product["price"]
-            item["image_url"] = product.get("image_url")
+            item["image_url"] = product.get("image_url") or product.get("image")
             total_amount += item["price"] * item["quantity"]
         updated_items.append(item)
     
@@ -133,3 +135,15 @@ async def get_asset_binary(asset_id: str):
     if not ObjectId.is_valid(asset_id):
         return None
     return await asset_collection.find_one({"_id": ObjectId(asset_id)})
+
+# --- FEEDBACK ---
+async def create_feedback(feedback: models.FeedbackCreate):
+    f_dict = feedback.model_dump()
+    result = await feedback_collection.insert_one(f_dict)
+    return await feedback_collection.find_one({"_id": result.inserted_id})
+
+async def get_feedbacks():
+    feedbacks = []
+    async for feedback in feedback_collection.find():
+        feedbacks.append(feedback)
+    return feedbacks
