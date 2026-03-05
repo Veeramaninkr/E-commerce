@@ -46,6 +46,9 @@ export const Navbar = () => {
     dispatch(logoutRequest());
     router.push('/');
   }
+  const handleWiselist = () => {
+    router.push('/client/wiselist');
+  }
 
   const searchInput = (
     <Input
@@ -108,6 +111,9 @@ export const Navbar = () => {
                 {cartCount}
               </span>
             )}
+          </div >
+          <div className="relative group cursor-pointer" onClick={handleWiselist}>
+            <HeartFilledIcon className="text-default-400 cursor-pointer hover:text-indigo-600 transition-colors" size={20} />
           </div>
           <div className="relative group cursor-pointer" onClick={trackOrder}>
             <Truck className="text-default-400 cursor-pointer hover:text-indigo-600 transition-colors" size={20} />

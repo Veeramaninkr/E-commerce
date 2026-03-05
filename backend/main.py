@@ -168,9 +168,14 @@ async def delete_product(product_id: str, current_user: dict = Depends(get_curre
         raise HTTPException(status_code=404, detail="Product not found")
     return {"message": "Product deleted"}
 # --- ORDERS ---
-@app.get("/orders", response_model=List[models.OrderResponse])
-async def read_orders(current_user: dict = Depends(get_current_user)):
-    return await crud.get_orders()
+@app.get("/orders", response_model=models.PaginatedOrderResponse)
+async def read_orders(search: str = None, status: str = None, page: int = 1, limit: int = 10, current_user: dict = Depends(get_current_user)):
+    orders_data = await crud.get_orders(search, status, page, limit)
+    return {
+        "message": "Orders fetched successfully",
+        "data": orders_data["data"],
+        "meta": orders_data["meta"]
+    }
 
 @app.post("/orders", response_model=models.OrderResponse)
 async def create_order(order: models.OrderCreate):
@@ -230,3 +235,57 @@ async def read_feedbacks(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Admin access required")
     return await crud.get_feedbacks()
 
+<<<<<<< Updated upstream
+@app.patch("/feedback/{feedback_id}", response_model=models.FeedbackResponse)
+async def update_feedback_status(feedback_id: str, feedback_update: models.FeedbackUpdate, current_user: dict = Depends(get_current_user)):
+=======
+@app.get("/my-feedback", response_model=List[models.FeedbackResponse])
+async def read_my_feedbacks(current_user: dict = Depends(get_current_user)):
+    return await crud.get_user_feedbacks(current_user["email"])
+
+@app.patch("/feedback/{feedback_id}", response_model=models.FeedbackResponse)
+async def update_feedback_status(feedback_id: str, feedback_update: models.FeedbackUpdate, current_user: dict = Depends(get_current_user)):
+    print(f"DEBUG: PATCH /feedback/{feedback_id} hit by {current_user.get('email')}")
+>>>>>>> Stashed changes
+    if current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    res = await crud.update_feedback(feedback_id, feedback_update.model_dump())
+    if not res:
+        raise HTTPException(status_code=404, detail="Feedback not found")
+    return res
+
+<<<<<<< Updated upstream
+# --- WISHLIST & COLLECTIONS ---
+@app.post("/collections", response_model=models.CollectionResponse)
+async def create_new_collection(collection: models.CollectionCreate, current_user: dict = Depends(get_current_user)):
+    return await crud.create_collection(current_user["email"], collection.name)
+
+@app.get("/collections", response_model=List[models.CollectionResponse])
+async def read_collections(current_user: dict = Depends(get_current_user)):
+    return await crud.get_collections(current_user["email"])
+
+@app.post("/wishlist", response_model=models.WishlistResponse)
+async def add_product_to_wishlist(wish_item: models.WishlistItemCreate, current_user: dict = Depends(get_current_user)):
+    res = await crud.add_to_wishlist(current_user["email"], wish_item.product_id, wish_item.collection_id)
+    if not res:
+        raise HTTPException(status_code=400, detail="Failed to add to wishlist")
+    return res
+
+@app.get("/wishlist", response_model=List[models.WishlistResponse])
+async def read_wishlist(collection_id: str = None, current_user: dict = Depends(get_current_user)):
+    return await crud.get_wishlist(current_user["email"], collection_id)
+
+@app.delete("/wishlist/{item_id}")
+async def delete_item_from_wishlist(item_id: str, current_user: dict = Depends(get_current_user)):
+    if not await crud.remove_from_wishlist(item_id):
+        raise HTTPException(status_code=404, detail="Item not found")
+    return {"message": "Removed from wishlist"}
+
+@app.delete("/collections/{collection_id}")
+async def delete_user_collection(collection_id: str, current_user: dict = Depends(get_current_user)):
+    if not await crud.delete_collection(collection_id):
+        raise HTTPException(status_code=404, detail="Collection not found")
+    return {"message": "Collection deleted"}
+
+=======
+>>>>>>> Stashed changes

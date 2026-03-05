@@ -24,7 +24,7 @@ import {
   ArrowLeft,
   MessageSquare,
 } from 'lucide-react';
-import { submitFeedbackRequest, resetFeedbackStatus } from '@/store/feedback/action';
+import { submitFeedbackRequest, resetFeedbackStatus, fetchMyFeedbackRequest } from '@/store/feedback/action';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 
@@ -38,7 +38,7 @@ const OrdersPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   // Feedback State
-  const { success: feedbackSuccess, loading: feedbackLoading, error: feedbackError } = useSelector((state: any) => state.feedback);
+  const { feedbacks, success: feedbackSuccess, loading: feedbackLoading, error: feedbackError } = useSelector((state: any) => state.feedback);
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
   const [feedbackData, setFeedbackData] = useState({
     order_id: '',
@@ -50,6 +50,7 @@ const OrdersPage = () => {
 
   useEffect(() => {
     dispatch(fetchOrdersRequest());
+    dispatch(fetchMyFeedbackRequest());
   }, [dispatch]);
 
   // Redirect if not authenticated after loading user info
@@ -63,6 +64,7 @@ const OrdersPage = () => {
     if (feedbackSuccess) {
       alert("Complaint submitted successfully");
       setIsFeedbackModalOpen(false);
+      dispatch(fetchMyFeedbackRequest()); // Refresh feedback list
       dispatch(resetFeedbackStatus());
     }
   }, [feedbackSuccess, dispatch]);
@@ -141,6 +143,20 @@ const OrdersPage = () => {
       case 'cancelled': return <Trash2 size={16} />;
       default: return <Package size={16} />;
     }
+  };
+
+  const getFeedbackStatusStyles = (status: string) => {
+    const s = (status || 'Pending').toLowerCase();
+    if (s === 'pending') return 'bg-amber-50 border-amber-100 text-amber-600';
+    if (s === 'resolved') return 'bg-emerald-50 border-emerald-100 text-emerald-600';
+    if (s === 'in progress' || s === 'read') return 'bg-indigo-50 border-indigo-100 text-indigo-600';
+    return 'bg-gray-50 border-gray-100 text-gray-600';
+  };
+
+  const getFeedbackStatusLabel = (status: string) => {
+    const s = (status || 'Pending').toLowerCase();
+    if (s === 'in progress') return 'READ';
+    return s.toUpperCase();
   };
 
   return (
@@ -344,8 +360,17 @@ const OrdersPage = () => {
                           <div className="flex-1">
                             <p className="text-xs font-bold text-gray-900 uppercase tracking-tight line-clamp-1">{item.name}</p>
                             <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{item.quantity} x ₹{item.price}</p>
+                            {/* Feedback Status */}
+                            {feedbacks?.find((f: any) => (f.order_id === (order.id || order._id) && f.product_id === item.product_id)) && (
+                              <div className="mt-1 flex items-center gap-1">
+                                <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border
+                                  ${getFeedbackStatusStyles(feedbacks.find((f: any) => (f.order_id === (order.id || order._id) && f.product_id === item.product_id)).status)}`}>
+                                  STATUS: {getFeedbackStatusLabel(feedbacks.find((f: any) => (f.order_id === (order.id || order._id) && f.product_id === item.product_id)).status)}
+                                </span>
+                              </div>
+                            )}
                           </div>
-                          {order.status?.toLowerCase() === 'delivered' && (
+                          {order.status?.toLowerCase() === 'delivered' && !feedbacks?.find((f: any) => (f.order_id === (order.id || order._id) && f.product_id === item.product_id)) && (
                             <button
                               onClick={(e) => { e.stopPropagation(); handleOpenFeedback(order, item); }}
                               className="p-2 text-indigo-500 hover:bg-indigo-50 rounded-lg transition-all"
@@ -477,8 +502,17 @@ const OrdersPage = () => {
                       <div className="flex-1">
                         <p className="text-xs font-bold text-gray-900 uppercase tracking-tight line-clamp-1">{item.name}</p>
                         <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{item.quantity} x ₹{item.price}</p>
+                        {/* Feedback Status in Modal */}
+                        {feedbacks?.find((f: any) => (f.order_id === (selectedOrder.id || selectedOrder._id) && f.product_id === item.product_id)) && (
+                          <div className="mt-1 flex items-center gap-1">
+                            <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border
+                              ${getFeedbackStatusStyles(feedbacks.find((f: any) => (f.order_id === (selectedOrder.id || selectedOrder._id) && f.product_id === item.product_id)).status)}`}>
+                              STATUS: {getFeedbackStatusLabel(feedbacks.find((f: any) => (f.order_id === (selectedOrder.id || selectedOrder._id) && f.product_id === item.product_id)).status)}
+                            </span>
+                          </div>
+                        )}
                       </div>
-                      {selectedOrder.status?.toLowerCase() === 'delivered' && (
+                      {selectedOrder.status?.toLowerCase() === 'delivered' && !feedbacks?.find((f: any) => (f.order_id === (selectedOrder.id || selectedOrder._id) && f.product_id === item.product_id)) && (
                         <button
                           onClick={() => handleOpenFeedback(selectedOrder, item)}
                           className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition-all duration-300 group/btn"
