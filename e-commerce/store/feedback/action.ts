@@ -5,16 +5,13 @@ import {
     FETCH_FEEDBACK_REQUEST,
     FETCH_FEEDBACK_SUCCESS,
     FETCH_FEEDBACK_FAILURE,
+    FETCH_MY_FEEDBACK_REQUEST,
+    FETCH_MY_FEEDBACK_SUCCESS,
+    FETCH_MY_FEEDBACK_FAILURE,
     UPDATE_FEEDBACK_STATUS_REQUEST,
     UPDATE_FEEDBACK_STATUS_SUCCESS,
     UPDATE_FEEDBACK_STATUS_FAILURE,
     RESET_FEEDBACK_STATUS,
-    UPDATE_FEEDBACK_STATUS_REQUEST,
-    UPDATE_FEEDBACK_STATUS_SUCCESS,
-    UPDATE_FEEDBACK_STATUS_FAILURE,
-    FETCH_MY_FEEDBACK_REQUEST,
-    FETCH_MY_FEEDBACK_SUCCESS,
-    FETCH_MY_FEEDBACK_FAILURE,
 } from "./actionType";
 
 export interface Feedback {
@@ -63,21 +60,12 @@ export const fetchFeedbackFailure = (payload: string) => ({
     payload,
 });
 
-<<<<<<< Updated upstream
-export const updateFeedbackStatusRequest = (feedbackId: string, status: string) => ({
-    type: UPDATE_FEEDBACK_STATUS_REQUEST,
-    payload: { feedbackId, status },
-});
-
-export const updateFeedbackStatusSuccess = (payload: Feedback) => ({
-=======
 export const updateFeedbackStatusRequest = (feedback_id: string, status: string) => ({
     type: UPDATE_FEEDBACK_STATUS_REQUEST,
     payload: { feedback_id, status },
 });
 
 export const updateFeedbackStatusSuccess = (payload: any) => ({
->>>>>>> Stashed changes
     type: UPDATE_FEEDBACK_STATUS_SUCCESS,
     payload,
 });
@@ -86,8 +74,6 @@ export const updateFeedbackStatusFailure = (payload: string) => ({
     type: UPDATE_FEEDBACK_STATUS_FAILURE,
     payload,
 });
-<<<<<<< Updated upstream
-=======
 
 export const fetchMyFeedbackRequest = () => ({
     type: FETCH_MY_FEEDBACK_REQUEST,
@@ -102,4 +88,3 @@ export const fetchMyFeedbackFailure = (payload: string) => ({
     type: FETCH_MY_FEEDBACK_FAILURE,
     payload,
 });
->>>>>>> Stashed changes

@@ -11,11 +11,8 @@ const rootReducer = combineReducers({
     addPro: addProReducer,
     order: orderReducer,
     feedback: feedbackReducer,
-<<<<<<< Updated upstream
     wishlist: wishlistReducer,
-=======
     buy: buyReducer,
->>>>>>> Stashed changes
 });
 
 export type AppState = ReturnType<typeof rootReducer>;
