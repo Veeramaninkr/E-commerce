@@ -1,7 +1,8 @@
 import * as types from './actionType';
 
-export const fetchOrdersRequest = () => ({
+export const fetchOrdersRequest = (page: number, limit: number, filters: { search?: string; status?: string }) => ({
     type: types.FETCH_ORDERS_REQUEST,
+    payload: { page, limit, ...filters },
 });
 
 export const fetchOrdersSuccess = (orders: any[]) => ({

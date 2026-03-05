@@ -3,9 +3,9 @@ import React, { useEffect, useState } from 'react'
 import { Navbar } from '@/components/navbar'
 import { useDispatch, useSelector } from 'react-redux'
 import { getRequest } from '@/store/addpro/action'
-import { createOrderRequest, addToCart } from '@/store/order/action'
+import { addToCart } from '@/store/order/action'
 import { RootState } from '@/store/store'
-import { ShoppingBag, Star, ArrowRight, Heart, CheckCircle, X, CreditCard, Ship, MapPin, Phone, User as UserIcon, Mail, MessageSquare, Send, Globe } from 'lucide-react'
+import { ShoppingBag, Star, ArrowRight, Heart, CheckCircle, X, CreditCard, Ship, MapPin, Phone, User as UserIcon, Mail, MessageSquare, Send, Globe, Plus } from 'lucide-react'
 import { Card, CardBody, CardFooter } from "@heroui/card"
 import { Button } from "@heroui/button"
 import { Skeleton } from "@heroui/skeleton"
@@ -13,82 +13,78 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure
 import { Input, Textarea } from "@heroui/input"
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
-import BuyPage from '../buy/page'
+import { addToWishlistRequest, fetchCollectionsRequest, createCollectionRequest } from '@/store/wishlist/action'
 
 
 function Page() {
     const dispatch = useDispatch();
     const { product, loading, error } = useSelector((state: RootState) => state.addPro);
     const { user, isAuthenticated } = useSelector((state: RootState) => state.login);
+    const { collections } = useSelector((state: RootState) => state.wishlist);
     const { isOpen, onOpen, onOpenChange } = useDisclosure();
+    const { isOpen: isWishlistOpen, onOpen: onWishlistOpen, onOpenChange: onWishlistOpenChange } = useDisclosure();
 
+    const [selectedProduct, setSelectedProduct] = useState<any>(null);
+    const [newCollName, setNewCollName] = useState("");
 
     const router = useRouter();
 
     const [showToast, setShowToast] = useState(false);
     const [lastAdded, setLastAdded] = useState("");
-    const [checkoutLoading, setCheckoutLoading] = useState(false);
-    const [orderComplete, setOrderComplete] = useState(false);
+    const [toastMessage, setToastMessage] = useState("");
 
-    // Checkout Form State
-    const [formData, setFormData] = useState({
-        user_name: '',
-        user_email: '',
-        user_number: '',
-        address: '',
-        pincode: ''
-    });
+
 
     useEffect(() => {
         dispatch(getRequest(""));
-    }, [dispatch]);
-
-    useEffect(() => {
-        if (user) {
-            setFormData(prev => ({
-                ...prev,
-                user_name: user.name || '',
-                user_email: user.email || ''
-            }));
+        if (isAuthenticated) {
+            dispatch(fetchCollectionsRequest());
         }
-    }, [user]);
+    }, [dispatch, isAuthenticated]);
+
+    const handleAddToWishlist = (p: any) => {
+        if (!isAuthenticated) {
+            router.push('/');
+            return;
+        }
+        setSelectedProduct(p);
+        onWishlistOpen();
+    };
+
+    const confirmAddToWishlist = (collectionId?: string) => {
+        if (selectedProduct) {
+            dispatch(addToWishlistRequest(selectedProduct.id || selectedProduct._id, collectionId));
+            setLastAdded(selectedProduct.name);
+            setToastMessage("Added to Wiselist");
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 3000);
+            onWishlistOpenChange();
+        }
+    };
+
+    const handleCreateColl = () => {
+        if (newCollName.trim()) {
+            dispatch(createCollectionRequest(newCollName));
+            setNewCollName("");
+        }
+    };
+
+
 
     const products = Array.isArray(product) ? product : [];
 
     const handleAddToCart = (p: any) => {
         dispatch(addToCart(p));
         setLastAdded(p.name);
+        setToastMessage("Added to Cart");
         setShowToast(true);
         setTimeout(() => setShowToast(false), 3000);
     };
-    const [buyitem, setBuyItem] = useState<any[]>([]);
-
 
     const handleBuyNow = (p: any) => {
         dispatch(addToCart(p));
         router.push("/client/buy");
     }
-
-
-    const total = buyitem.reduce((acc: number, item: any) => acc + (item.price * item.quantity), 0);
-
-    const payload = {
-        user_name: formData.user_name,
-        user_email: formData.user_email,
-        user_number: formData.user_number,
-        address: formData.address,
-        pincode: formData.pincode,
-        items: buyitem.map((item: any) => ({
-            product_id: item.id,
-            name: item.name,
-            price: item.price,
-            quantity: item.quantity,
-            image_url: item.image
-        })),
-        total_amount: total,
-        status: 'Pending'
-    };
-
 
     return (
         <div className="min-h-screen bg-[#fafafa]">
@@ -154,7 +150,10 @@ function Page() {
                             <Card key={p.id || p._id} className="group h-[450px] rounded-[32px] border-none bg-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.03)] hover:shadow-[0_40px_100px_-20px_rgba(0,0,0,0.08)] transition-all duration-700 hover:-translate-y-3 cursor-pointer">
                                 <CardBody className="p-0 overflow-hidden relative">
                                     <div className="absolute top-5 right-5 z-20 space-y-2 opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-500">
-                                        <button className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center text-gray-900 shadow-xl hover:bg-gray-900 hover:text-white transition-all transform hover:scale-110 active:scale-95">
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); handleAddToWishlist(p); }}
+                                            className="w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center text-gray-900 shadow-xl hover:bg-gray-900 hover:text-white transition-all transform hover:scale-110 active:scale-95 transition-duration-500"
+                                        >
                                             <Heart size={20} />
                                         </button>
                                         <button
@@ -378,57 +377,79 @@ function Page() {
                         </div>
                         <div className="flex flex-col">
                             <span className="font-black text-[10px] uppercase tracking-widest opacity-60 text-left">Success</span>
-                            <span className="text-xs font-bold uppercase tracking-tight truncate max-w-[200px] text-left">{lastAdded} Added</span>
+                            <span className="text-xs font-bold uppercase tracking-tight truncate max-w-[200px] text-left">{lastAdded} {toastMessage}</span>
                         </div>
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            {/* Checkout Modal */}
-            <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="3xl" scrollBehavior="inside" className="bg-white rounded-[40px] border-none shadow-2xl p-0 overflow-hidden">
+            {/* Wishlist Selection Modal */}
+            <Modal isOpen={isWishlistOpen} onOpenChange={onWishlistOpenChange} size="xl" className="bg-white rounded-[40px]">
                 <ModalContent>
                     {(onClose) => (
                         <>
-                            <ModalBody className="p-0 flex flex-col md:flex-row min-h-[640px]">
-                                {/* Summary Side */}
-                                <div className="w-full md:w-[40%] bg-gray-50 p-10 flex flex-col">
-                                    <div className="mb-10 text-left font-black">
-                                        <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.3em] mb-1">Cart Summary</p>
-                                        <h3 className="text-2xl font-black text-gray-900 tracking-tighter uppercase">Your Selection</h3>
-                                    </div>
-
-                                    <div className="flex-1 space-y-6 overflow-y-auto no-scrollbar pr-2 mb-8">
-                                        {buyitem.map((item: any, idx: number) => (
-                                            <div key={idx} className="flex gap-4 items-center">
-                                                <div className="w-16 h-16 rounded-2xl bg-white p-2 border border-gray-100 shrink-0">
-                                                    <img src={item.image} alt={item.name} className="w-full h-full object-contain mix-blend-multiply" />
-                                                </div>
-                                                <div className="min-w-0 flex-1 text-left">
-                                                    <p className="text-xs font-black text-gray-900 truncate uppercase">{item.name}</p>
-                                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">${item.price} x {item.quantity}</p>
-                                                </div>
+                            <ModalHeader className="flex flex-col gap-1 uppercase font-black text-gray-900 tracking-tighter pt-8 px-10">Add to Wiselist</ModalHeader>
+                            <ModalBody className="py-6 px-10">
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Select a Collection</p>
+                                <div className="space-y-2 max-h-[300px] overflow-y-auto no-scrollbar">
+                                    <button
+                                        onClick={() => confirmAddToWishlist()}
+                                        className="w-full flex items-center justify-between p-5 rounded-3xl bg-gray-50 hover:bg-indigo-50 hover:text-indigo-600 transition-all font-bold text-xs uppercase tracking-tight group border border-transparent hover:border-indigo-100"
+                                    >
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-sm">
+                                                <Heart size={18} className="text-gray-400 group-hover:text-indigo-600 transition-colors" />
                                             </div>
-                                        ))}
-                                    </div>
+                                            <span>Default Wishlist</span>
+                                        </div>
+                                        <ArrowRight size={16} className="opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0" />
+                                    </button>
 
-                                    <div className="pt-8 border-t border-gray-200">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Subtotal</span>
-                                            <span className="text-sm font-black text-gray-900">${buyitem.reduce((acc: number, i: any) => acc + (i.price * i.quantity), 0).toLocaleString()}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Shipping</span>
-                                            <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Complimentary</span>
-                                        </div>
-                                        <div className="flex items-center justify-between mt-6">
-                                            <span className="text-xs font-black text-gray-900 uppercase tracking-widest">Total Pay</span>
-                                            <span className="text-2xl font-black text-gray-900 tracking-tighter">${buyitem.reduce((acc: number, i: any) => acc + (i.price * i.quantity), 0).toLocaleString()}</span>
-                                        </div>
-                                    </div>
+                                    {collections && collections.map((coll: any) => (
+                                        <button
+                                            key={coll._id}
+                                            onClick={() => confirmAddToWishlist(coll._id)}
+                                            className="w-full flex items-center justify-between p-5 rounded-3xl bg-gray-50 hover:bg-indigo-50 hover:text-indigo-600 transition-all font-bold text-xs uppercase tracking-tight group border border-transparent hover:border-indigo-100"
+                                        >
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 rounded-2xl bg-white flex items-center justify-center shadow-sm">
+                                                    <ShoppingBag size={18} className="text-gray-400 group-hover:text-indigo-600 transition-colors" />
+                                                </div>
+                                                <span>{coll.name}</span>
+                                            </div>
+                                            <ArrowRight size={16} className="opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0" />
+                                        </button>
+                                    ))}
                                 </div>
 
-
+                                <div className="mt-8 pt-8 border-t border-gray-100">
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Or Create New Collection</p>
+                                    <div className="flex gap-3">
+                                        <Input
+                                            placeholder="NEW COLLECTION NAME"
+                                            value={newCollName}
+                                            onChange={(e) => setNewCollName(e.target.value)}
+                                            variant="flat"
+                                            radius="full"
+                                            classNames={{
+                                                input: "font-black tracking-widest placeholder:text-gray-300",
+                                                inputWrapper: "h-14 bg-gray-50 hover:bg-gray-100 transition-colors px-6"
+                                            }}
+                                        />
+                                        <Button
+                                            color="primary"
+                                            isIconOnly
+                                            radius="full"
+                                            className="h-14 w-14 shrink-0 shadow-lg shadow-indigo-100"
+                                            onClick={handleCreateColl}
+                                        >
+                                            <Plus size={24} />
+                                        </Button>
+                                    </div>
+                                </div>
                             </ModalBody>
+                            <ModalFooter className="p-8">
+                            </ModalFooter>
                         </>
                     )}
                 </ModalContent>

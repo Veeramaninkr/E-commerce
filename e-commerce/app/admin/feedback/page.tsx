@@ -1,27 +1,28 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '@/store/store';
-import { fetchFeedbackRequest } from '@/store/feedback/action';
+import { RootState, AppDispatch } from '@/store/store';
+import { fetchFeedbackRequest, updateFeedbackStatusRequest, resetFeedbackStatus, Feedback } from '@/store/feedback/action';
 import {
     MessageSquare,
     User,
-    Mail,
-    Tag,
     Hash,
     AlertCircle,
     Loader2,
     Search,
-    ArrowLeft
+    ArrowLeft,
+    X
 } from 'lucide-react';
+import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/dropdown";
+import { Button } from "@heroui/button";
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 
 const AdminFeedbackPage = () => {
-    const dispatch = useDispatch();
+    const dispatch = useDispatch<AppDispatch>();
     const router = useRouter();
-    const { feedbacks, loading, error } = useSelector((state: any) => state.feedback);
-    const { isAuthenticated, user, loading: authLoading } = useSelector((state: RootState) => state.login);
+    const { feedbacks, loading, error } = useSelector((state: RootState) => state.feedback);
+    const { isAuthenticated, user } = useSelector((state: RootState) => state.login);
     const [search, setSearch] = useState('');
 
     useEffect(() => {
@@ -30,14 +31,27 @@ const AdminFeedbackPage = () => {
         }
     }, [dispatch, isAuthenticated, user]);
 
+    useEffect(() => {
+        if (error) {
+            const timer = setTimeout(() => {
+                dispatch(resetFeedbackStatus());
+            }, 8000);
+            return () => clearTimeout(timer);
+        }
+    }, [error, dispatch]);
+
     const isLoading = loading && (!feedbacks || feedbacks.length === 0);
 
-    const filteredFeedbacks = (feedbacks || []).filter((f: any) =>
-        f.product_name?.toLowerCase().includes(search.toLowerCase()) ||
-        f.complaint?.toLowerCase().includes(search.toLowerCase()) ||
-        f.user_email?.toLowerCase().includes(search.toLowerCase()) ||
-        f.order_id?.toLowerCase().includes(search.toLowerCase())
-    );
+    const filteredFeedbacks = (feedbacks || []).filter((f: Feedback) => {
+        const query = search.toLowerCase();
+        return (
+            (f.product_name?.toLowerCase() || "").includes(query) ||
+            (f.complaint?.toLowerCase() || "").includes(query) ||
+            (f.user_email?.toLowerCase() || "").includes(query) ||
+            (f.order_id?.toLowerCase() || "").includes(query) ||
+            (f.status?.toLowerCase() || "").includes(query)
+        );
+    });
 
     return (
         <div className="animate-in fade-in duration-700 min-h-screen bg-[#fafafa] p-4 md:p-12">
@@ -83,11 +97,19 @@ const AdminFeedbackPage = () => {
                     </div>
 
                     {error && (
-                        <div className="mb-8 p-6 bg-red-50 border border-red-100 text-red-700 rounded-[28px] shadow-sm flex items-center gap-4 animate-in slide-in-from-top-4">
-                            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-                                <AlertCircle size={20} className="text-red-600" />
+                        <div className="mb-8 p-6 bg-red-50 border border-red-100 text-red-700 rounded-[28px] shadow-sm flex items-center justify-between gap-4 animate-in slide-in-from-top-4">
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                                    <AlertCircle size={20} className="text-red-600" />
+                                </div>
+                                <p className="text-sm font-bold uppercase tracking-wide">{error}</p>
                             </div>
-                            <p className="text-sm font-bold uppercase tracking-wide">{error}</p>
+                            <button
+                                onClick={() => dispatch(resetFeedbackStatus())}
+                                className="p-2 hover:bg-red-100 rounded-full transition-colors"
+                            >
+                                <X size={20} className="text-red-600" />
+                            </button>
                         </div>
                     )}
 
@@ -103,7 +125,7 @@ const AdminFeedbackPage = () => {
                             ) : (
                                 filteredFeedbacks.map((feedback: any, index: number) => (
                                     <motion.div
-                                        key={feedback.id || feedback._id}
+                                        key={`${feedback._id || feedback.id || 'feedback'}-${index}`}
                                         initial={{ opacity: 0, y: 30 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: index * 0.05 }}
@@ -116,6 +138,37 @@ const AdminFeedbackPage = () => {
                                                     <h3 className="text-2xl font-black text-gray-900 tracking-tight uppercase leading-tight line-clamp-2">
                                                         {feedback.product_name}
                                                     </h3>
+                                                    <div>
+                                                        <Dropdown>
+                                                            <DropdownTrigger>
+                                                                <Button
+                                                                    className="capitalize font-black text-[10px] tracking-widest h-9"
+                                                                    variant="flat"
+                                                                    color={feedback.status === 'read' ? 'success' : 'warning'}
+                                                                    disabled={loading}
+                                                                >
+                                                                    {feedback.status || 'pending'}
+                                                                </Button>
+                                                            </DropdownTrigger>
+                                                            <DropdownMenu
+                                                                disallowEmptySelection
+                                                                aria-label="Status update"
+                                                                selectedKeys={new Set([feedback.status || "pending"])}
+                                                                selectionMode="single"
+                                                                variant="flat"
+                                                                onSelectionChange={(keys: any) => {
+                                                                    const val = Array.from(keys).join("");
+                                                                    const feedbackId = feedback._id || feedback.id;
+                                                                    if (feedbackId) {
+                                                                        dispatch(updateFeedbackStatusRequest(feedbackId, val));
+                                                                    }
+                                                                }}
+                                                            >
+                                                                <DropdownItem key="pending" className="text-warning font-black uppercase text-[10px]">Pending</DropdownItem>
+                                                                <DropdownItem key="read" className="text-success font-black uppercase text-[10px]">Read</DropdownItem>
+                                                            </DropdownMenu>
+                                                        </Dropdown>
+                                                    </div>
                                                     <div className="flex items-center gap-2 bg-gray-50 border border-gray-100 px-3 py-1.5 rounded-xl w-fit">
                                                         <Hash size={10} className="text-gray-400" />
                                                         <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none">ORDER ID: {feedback.order_id?.slice(-8).toUpperCase()}</span>

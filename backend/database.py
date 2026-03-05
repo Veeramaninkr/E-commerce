@@ -11,4 +11,5 @@ product_collection = database.get_collection("products")
 order_collection = database.get_collection("orders")
 asset_collection = database.get_collection("assets")
 feedback_collection = database.get_collection("feedbacks")
-
+wishlist_collection = database.get_collection("wishlist")
+collection_category_collection = database.get_collection("collections")

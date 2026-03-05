@@ -110,7 +110,7 @@ function* downloadImageRequestSaga(action: any): SagaIterator {
     link.click();
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
-    yield put(downloadImageSuccess());          
+    yield put(downloadImageSuccess());
   } catch (error: any) {
     yield put(downloadImageFailure(error.message));
   }

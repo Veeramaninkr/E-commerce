@@ -136,6 +136,17 @@ class OrderResponse(OrderBase):
     class Config:
         populate_by_name = True
 
+class PaginationMeta(BaseModel):
+    current_page: int
+    total_pages: int
+    total_items: int
+    limit: int
+
+class PaginatedOrderResponse(BaseModel):
+    message: str = "Success"
+    data: List[OrderResponse]
+    meta: PaginationMeta
+
 class UserRoleUpdate(BaseModel):
     role: str
 
@@ -146,8 +157,43 @@ class FeedbackCreate(BaseModel):
     product_image: Optional[str] = None
     user_email: EmailStr
     complaint: str
+    status: str = Field(default="pending")
+
+class FeedbackUpdate(BaseModel):
+    status: Optional[str] = None
 
 class FeedbackResponse(FeedbackCreate):
+    id: Optional[PyObjectId] = Field(alias="_id", default=None)
+
+    class Config:
+        populate_by_name = True
+
+class CollectionBase(BaseModel):
+    name: str = Field(...)
+    user_email: EmailStr = Field(...)
+
+class CollectionCreate(BaseModel):
+    name: str = Field(...)
+
+class CollectionResponse(CollectionBase):
+    id: Optional[PyObjectId] = Field(alias="_id", default=None)
+
+    class Config:
+        populate_by_name = True
+
+class WishlistItemBase(BaseModel):
+    product_id: str = Field(...)
+    user_email: EmailStr = Field(...)
+    collection_id: Optional[str] = None
+    product_name: Optional[str] = None
+    product_image: Optional[str] = None
+    product_price: Optional[float] = None
+
+class WishlistItemCreate(BaseModel):
+    product_id: str = Field(...)
+    collection_id: Optional[str] = None
+
+class WishlistResponse(WishlistItemBase):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
 
     class Config:

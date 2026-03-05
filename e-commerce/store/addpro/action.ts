@@ -93,16 +93,16 @@ export const uploadImageFailure = (payload: any) => ({
 });
 
 export const downloadImageRequest = (payload: { imageUrl: string; fileName: string }) => ({
-  type:DOWNLOAD_IMAGE_REQUEST,
+  type: DOWNLOAD_IMAGE_REQUEST,
   payload,
 });
 
 export const downloadImageSuccess = () => ({
-  type:DOWNLOAD_IMAGE_SUCCESS,
+  type: DOWNLOAD_IMAGE_SUCCESS,
 });
 
 export const downloadImageFailure = (payload: any) => ({
-  type:DOWNLOAD_IMAGE_FAILURE,
+  type: DOWNLOAD_IMAGE_FAILURE,
   payload,
 });
 

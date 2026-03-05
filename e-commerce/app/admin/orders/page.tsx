@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useRouter } from 'next/navigation';
 import { RootState } from '@/store/store';
@@ -22,17 +22,21 @@ import {
     CircleOff,
     Eye,
 } from 'lucide-react';
+import { debounce } from 'lodash';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const OrdersPage = () => {
     const dispatch = useDispatch();
     const router = useRouter();
-    const { orders, loading, error } = useSelector((state: any) => state.order);
+    const { orders, loading, error, meta } = useSelector((state: RootState) => state.order);
     const { isAuthenticated, user, loading: authLoading } = useSelector((state: RootState) => state.login);
     const [selectedOrder, setSelectedOrder] = useState<any>(null);
     const [isEditBannerOpen, setIsEditBannerOpen] = useState(false);
     const [isViewBannerOpen, setIsViewBannerOpen] = useState(false);
-    const [searchTerm, setSearchTerm] = useState('');
+    const [page, setPage] = useState(1);
+    const [limit, setLimit] = useState(10);
+    const [search, setSearch] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
 
     // Form State
     const [formData, setFormData] = useState({
@@ -43,6 +47,22 @@ const OrdersPage = () => {
         pincode: '',
         status: ''
     });
+    // Debounce search to avoid too many API calls
+    const debouncedSearch = useCallback(
+        debounce((value: string) => {
+            dispatch(fetchOrdersRequest(1, limit, {
+                search: value || undefined,
+                status: statusFilter !== 'all' ? statusFilter : undefined,
+            }));
+            setPage(1); // Reset to page 1 on search
+        }, 500),
+        [limit, statusFilter, dispatch]
+    );
+
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearch(e.target.value);
+        debouncedSearch(e.target.value);
+    };
 
     // Authentication Guard
     useEffect(() => {
@@ -56,8 +76,13 @@ const OrdersPage = () => {
     }, [isAuthenticated, user, authLoading, router]);
 
     useEffect(() => {
-        dispatch(fetchOrdersRequest());
-    }, [dispatch]);
+        // Initial load and filter/pagination changes
+        // This effect runs for initial fetch, page changes, and status filter updates
+        dispatch(fetchOrdersRequest(page, limit, {
+            status: statusFilter !== 'all' ? statusFilter : undefined,
+            search: search || undefined
+        }));
+    }, [dispatch, page, limit, statusFilter]);
 
     if (loading && orders.length === 0) {
         return (
@@ -102,15 +127,9 @@ const OrdersPage = () => {
         }
     };
 
-    const filteredOrders = orders.filter((order: any) =>
-        order.user_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.user_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (order.id || order._id)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.items?.some((item: any) =>
-            item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.product_id?.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-    );
+    // Since the API now handles filtering, we can use the orders from state directly.
+    // We keep the variable name to avoid changing the JSX.
+    const filteredOrders = orders;
 
     const getStatusColor = (status: string) => {
         switch (status.toLowerCase()) {
@@ -142,6 +161,22 @@ const OrdersPage = () => {
                 </div>
 
                 <div className="flex items-center gap-4">
+                    <div className="relative">
+                        <select
+                            className="h-14 px-6 bg-white border border-gray-100 rounded-2xl focus:border-gray-900 outline-none transition-all shadow-[0_10px_30px_-15px_rgba(0,0,0,0.02)] text-xs font-black tracking-widest uppercase appearance-none"
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                        >
+                            <option value="all">ALL STATUS</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Shipped">Shipped</option>
+                            <option value="Delivered">Delivered</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
+                        <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-gray-400">
+                            <ChevronRight size={14} className="rotate-90" />
+                        </div>
+                    </div>
                     <div className="relative group">
                         <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                             <Search className="text-gray-400 group-focus-within:text-gray-900 transition-colors duration-300" size={18} />
@@ -150,8 +185,8 @@ const OrdersPage = () => {
                             type="text"
                             placeholder="SEARCH SHIPMENTS..."
                             className="w-full md:w-96 h-14 pl-14 pr-6 bg-white border border-gray-100 rounded-2xl focus:border-gray-900 outline-none transition-all shadow-[0_10px_30px_-15px_rgba(0,0,0,0.02)] text-xs font-black tracking-widest uppercase placeholder:text-gray-300"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            value={search}
+                            onChange={handleSearchChange}
                         />
                     </div>
                 </div>
@@ -279,6 +314,31 @@ const OrdersPage = () => {
                     </table>
                 </div>
             </div>
+
+            {/* Pagination Controls */}
+            {meta && meta.total_pages > 1 && (
+                <div className="mt-8 flex items-center justify-between bg-white p-6 rounded-[24px] border border-gray-100 shadow-sm">
+                    <div className="text-xs font-black text-gray-400 uppercase tracking-widest">
+                        Page {meta.current_page} of {meta.total_pages} — {meta.total_items} Total Items
+                    </div>
+                    <div className="flex gap-2">
+                        <button
+                            disabled={page <= 1}
+                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                            className="h-10 px-4 bg-gray-50 border border-gray-100 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                        >
+                            Previous
+                        </button>
+                        <button
+                            disabled={page >= meta.total_pages}
+                            onClick={() => setPage(p => Math.min(meta.total_pages, p + 1))}
+                            className="h-10 px-4 bg-gray-900 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-black disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                        >
+                            Next
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Edit Banner / Sidebar */}
             <AnimatePresence>

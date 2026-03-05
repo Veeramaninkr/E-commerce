@@ -74,11 +74,43 @@ async def delete_product(product_id: str):
     result = await product_collection.delete_one({"_id": ObjectId(product_id)})
     return result.deleted_count > 0
 # --- ORDER ---
-async def get_orders():
+async def get_orders(search: str = None, status: str = None, page: int = 1, limit: int = 10):
+    query = {}
+    if search:
+        query["$or"] = [
+                {"user_name": {"$regex": search, "$options": "i"}},
+                {"user_email": {"$regex": search, "$options": "i"}},
+                {"user_number": {"$regex": search, "$options": "i"}},
+                {"address": {"$regex": search, "$options": "i"}},
+                {"pincode": {"$regex": search, "$options": "i"}},
+                {"status": {"$regex": search, "$options": "i"}},
+                {"items.name": {"$regex": search, "$options": "i"}},
+                {"items.product_id": {"$regex": search, "$options": "i"}},
+            ]
+        if ObjectId.is_valid(search):
+             query["$or"].append({"_id": ObjectId(search)})
+    
+    if status:
+        query["status"] = status
+
+    total_items = await order_collection.count_documents(query)
+    skip = (page - 1) * limit
+    
     orders = []
-    async for order in order_collection.find():
+    async for order in order_collection.find(query).skip(skip).limit(limit):
         orders.append(order)
-    return orders
+    
+    total_pages = (total_items + limit - 1) // limit
+    
+    return {
+        "data": orders,
+        "meta": {
+            "current_page": page,
+            "total_pages": total_pages,
+            "total_items": total_items,
+            "limit": limit
+        }
+    }
 
 async def get_order(order_id: str):
     if not ObjectId.is_valid(order_id):
@@ -142,8 +174,90 @@ async def create_feedback(feedback: models.FeedbackCreate):
     result = await feedback_collection.insert_one(f_dict)
     return await feedback_collection.find_one({"_id": result.inserted_id})
 
+async def get_feedback(feedback_id: str):
+    if not ObjectId.is_valid(feedback_id):
+        return None
+    return await feedback_collection.find_one({"_id": ObjectId(feedback_id)})
+
+async def update_feedback(feedback_id: str, data: dict):
+    if not ObjectId.is_valid(feedback_id):
+        return None
+    data = {k: v for k, v in data.items() if v is not None}
+    if not data:
+        return await get_feedback(feedback_id)
+    await feedback_collection.update_one({"_id": ObjectId(feedback_id)}, {"$set": data})
+    return await get_feedback(feedback_id)
+
 async def get_feedbacks():
     feedbacks = []
     async for feedback in feedback_collection.find():
         feedbacks.append(feedback)
     return feedbacks
+
+# --- WISHLIST & COLLECTIONS ---
+from database import collection_category_collection, wishlist_collection
+
+async def create_collection(user_email: str, name: str):
+    new_collection = {"user_email": user_email, "name": name}
+    result = await collection_category_collection.insert_one(new_collection)
+    return await collection_category_collection.find_one({"_id": result.inserted_id})
+
+async def get_collections(user_email: str):
+    collections = []
+    async for coll in collection_category_collection.find({"user_email": user_email}):
+        collections.append(coll)
+    return collections
+
+async def add_to_wishlist(user_email: str, product_id: str, collection_id: str = None):
+    # Check if already in wishlist
+    query = {"user_email": user_email, "product_id": product_id}
+    existing = await wishlist_collection.find_one(query)
+    
+    if existing:
+        if collection_id:
+             await wishlist_collection.update_one(query, {"$set": {"collection_id": collection_id}})
+             return await wishlist_collection.find_one(query)
+        return existing
+    
+    # Get product details to store denormalized if needed (or just store ID)
+    product = await get_product(product_id)
+    if not product:
+        return None
+    
+    wish_item = {
+        "user_email": user_email,
+        "product_id": product_id,
+        "collection_id": collection_id,
+        "product_name": product.get("name"),
+        "product_image": product.get("image_url") or product.get("image"),
+        "product_price": product.get("price")
+    }
+    
+    result = await wishlist_collection.insert_one(wish_item)
+    return await wishlist_collection.find_one({"_id": result.inserted_id})
+
+async def get_wishlist(user_email: str, collection_id: str = None):
+    query = {"user_email": user_email}
+    if collection_id:
+        query["collection_id"] = collection_id
+    
+    wishlist = []
+    async for item in wishlist_collection.find(query):
+        wishlist.append(item)
+    return wishlist
+
+async def remove_from_wishlist(item_id: str):
+    if not ObjectId.is_valid(item_id):
+        return False
+    result = await wishlist_collection.delete_one({"_id": ObjectId(item_id)})
+    return result.deleted_count > 0
+
+async def delete_collection(collection_id: str):
+    if not ObjectId.is_valid(collection_id):
+        return False
+    
+    # Optional: Update wishlist items to remove this collection reference
+    await wishlist_collection.update_many({"collection_id": collection_id}, {"$set": {"collection_id": None}})
+    
+    result = await collection_category_collection.delete_one({"_id": ObjectId(collection_id)})
+    return result.deleted_count > 0

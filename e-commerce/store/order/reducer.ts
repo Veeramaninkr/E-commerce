@@ -20,6 +20,12 @@ interface OrderState {
     items: any[];
     loading: boolean;
     error: string | null;
+    meta: {
+        current_page: number;
+        total_pages: number;
+        total_items: number;
+        limit: number;
+    } | null;
 }
 
 const initialState: OrderState = {
@@ -27,6 +33,7 @@ const initialState: OrderState = {
     items: [],
     loading: false,
     error: null,
+    meta: null,
 };
 
 const orderReducer = (state = initialState, action: any): OrderState => {
@@ -38,7 +45,12 @@ const orderReducer = (state = initialState, action: any): OrderState => {
             return { ...state, loading: true, error: null };
 
         case FETCH_ORDERS_SUCCESS:
-            return { ...state, loading: false, orders: action.payload };
+            return {
+                ...state,
+                loading: false,
+                orders: action.payload.data,
+                meta: action.payload.meta,
+            };
 
         case UPDATE_ORDER_SUCCESS:
             const updatedOrderId = action.payload.id || action.payload._id;
