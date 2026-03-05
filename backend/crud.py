@@ -191,6 +191,52 @@ async def update_feedback(feedback_id: str, data: dict):
 async def get_feedbacks():
     feedbacks = []
     async for feedback in feedback_collection.find():
+        feedback["id"] = str(feedback["_id"])
+        feedback["_id"] = str(feedback["_id"])
+        feedbacks.append(feedback)
+    return feedbacks
+
+async def update_feedback(feedback_id: str, data: dict):
+    print(f"DEBUG: update_feedback called with feedback_id='{feedback_id}'")
+    
+    data = {k: v for k, v in data.items() if v is not None}
+    
+    feedback = None
+    
+    # 1. Try finding by feedback _id if valid ObjectId
+    if ObjectId.is_valid(feedback_id):
+        print(f"DEBUG: feedback_id '{feedback_id}' is a valid ObjectId, checking _id")
+        feedback = await feedback_collection.find_one({"_id": ObjectId(feedback_id)})
+        if feedback:
+            print(f"DEBUG: Found feedback by _id: {feedback.get('_id')}")
+    
+    # 2. If not found (or not valid ObjectId), try finding by order_id
+    if not feedback:
+        print(f"DEBUG: Not found by _id (or invalid ObjectId), checking order_id='{feedback_id}'")
+        feedback = await feedback_collection.find_one({"order_id": feedback_id})
+        if feedback:
+            print(f"DEBUG: Found feedback by order_id: {feedback.get('_id')}")
+            
+    if not feedback:
+        print(f"DEBUG: No feedback found for feedback_id='{feedback_id}'")
+        return None
+        
+    # Update the document
+    await feedback_collection.update_one({"_id": feedback["_id"]}, {"$set": data})
+    
+    # Retrieve updated document
+    res = await feedback_collection.find_one({"_id": feedback["_id"]})
+    if res:
+        res["id"] = str(res["_id"])
+        res["_id"] = str(res["_id"])
+        print(f"DEBUG: Successfully updated feedback {res['id']}")
+    return res
+
+async def get_user_feedbacks(email: str):
+    feedbacks = []
+    async for feedback in feedback_collection.find({"user_email": email}):
+        feedback["id"] = str(feedback["_id"])
+        feedback["_id"] = str(feedback["_id"])
         feedbacks.append(feedback)
     return feedbacks
 

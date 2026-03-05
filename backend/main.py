@@ -235,8 +235,18 @@ async def read_feedbacks(current_user: dict = Depends(get_current_user)):
         raise HTTPException(status_code=403, detail="Admin access required")
     return await crud.get_feedbacks()
 
+<<<<<<< Updated upstream
 @app.patch("/feedback/{feedback_id}", response_model=models.FeedbackResponse)
 async def update_feedback_status(feedback_id: str, feedback_update: models.FeedbackUpdate, current_user: dict = Depends(get_current_user)):
+=======
+@app.get("/my-feedback", response_model=List[models.FeedbackResponse])
+async def read_my_feedbacks(current_user: dict = Depends(get_current_user)):
+    return await crud.get_user_feedbacks(current_user["email"])
+
+@app.patch("/feedback/{feedback_id}", response_model=models.FeedbackResponse)
+async def update_feedback_status(feedback_id: str, feedback_update: models.FeedbackUpdate, current_user: dict = Depends(get_current_user)):
+    print(f"DEBUG: PATCH /feedback/{feedback_id} hit by {current_user.get('email')}")
+>>>>>>> Stashed changes
     if current_user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     res = await crud.update_feedback(feedback_id, feedback_update.model_dump())
@@ -244,6 +254,7 @@ async def update_feedback_status(feedback_id: str, feedback_update: models.Feedb
         raise HTTPException(status_code=404, detail="Feedback not found")
     return res
 
+<<<<<<< Updated upstream
 # --- WISHLIST & COLLECTIONS ---
 @app.post("/collections", response_model=models.CollectionResponse)
 async def create_new_collection(collection: models.CollectionCreate, current_user: dict = Depends(get_current_user)):
@@ -276,3 +287,5 @@ async def delete_user_collection(collection_id: str, current_user: dict = Depend
         raise HTTPException(status_code=404, detail="Collection not found")
     return {"message": "Collection deleted"}
 
+=======
+>>>>>>> Stashed changes

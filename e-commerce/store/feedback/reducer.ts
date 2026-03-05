@@ -9,11 +9,18 @@ import {
     UPDATE_FEEDBACK_STATUS_SUCCESS,
     UPDATE_FEEDBACK_STATUS_FAILURE,
     RESET_FEEDBACK_STATUS,
+    UPDATE_FEEDBACK_STATUS_REQUEST,
+    UPDATE_FEEDBACK_STATUS_SUCCESS,
+    UPDATE_FEEDBACK_STATUS_FAILURE,
+    FETCH_MY_FEEDBACK_REQUEST,
+    FETCH_MY_FEEDBACK_SUCCESS,
+    FETCH_MY_FEEDBACK_FAILURE,
 } from "./actionType";
 import { Feedback } from "./action";
 
 interface FeedbackState {
     loading: boolean;
+    updating: boolean;
     success: boolean;
     error: string | null;
     feedbacks: Feedback[];
@@ -21,6 +28,7 @@ interface FeedbackState {
 
 const initialState: FeedbackState = {
     loading: false,
+    updating: false,
     success: false,
     error: null,
     feedbacks: [],
@@ -46,6 +54,7 @@ const feedbackReducer = (state = initialState, action: any): FeedbackState => {
             return { ...state, loading: false, feedbacks: action.payload, error: null };
         case FETCH_FEEDBACK_FAILURE:
             return { ...state, loading: false, error: action.payload };
+<<<<<<< Updated upstream
         case UPDATE_FEEDBACK_STATUS_REQUEST:
             return { ...state, loading: true, error: null };
         case UPDATE_FEEDBACK_STATUS_SUCCESS:
@@ -62,6 +71,27 @@ const feedbackReducer = (state = initialState, action: any): FeedbackState => {
             };
         case UPDATE_FEEDBACK_STATUS_FAILURE:
             return { ...state, loading: false, error: action.payload };
+=======
+        case FETCH_MY_FEEDBACK_REQUEST:
+            return { ...state, loading: true, error: null };
+        case FETCH_MY_FEEDBACK_SUCCESS:
+            return { ...state, loading: false, feedbacks: action.payload, error: null };
+        case FETCH_MY_FEEDBACK_FAILURE:
+            return { ...state, loading: false, error: action.payload };
+        case UPDATE_FEEDBACK_STATUS_REQUEST:
+            return { ...state, updating: true, error: null };
+        case UPDATE_FEEDBACK_STATUS_SUCCESS:
+            const updatedFeedbackId = action.payload.id || action.payload._id;
+            return {
+                ...state,
+                updating: false,
+                feedbacks: state.feedbacks.map((f: any) =>
+                    (f.id || f._id) === updatedFeedbackId ? action.payload : f
+                ),
+            };
+        case UPDATE_FEEDBACK_STATUS_FAILURE:
+            return { ...state, updating: false, error: action.payload };
+>>>>>>> Stashed changes
         case RESET_FEEDBACK_STATUS:
             return { ...state, success: false, error: null };
         default:

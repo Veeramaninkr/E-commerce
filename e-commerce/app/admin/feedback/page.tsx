@@ -11,18 +11,31 @@ import {
     Loader2,
     Search,
     ArrowLeft,
+<<<<<<< Updated upstream
     X
 } from 'lucide-react';
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/dropdown";
 import { Button } from "@heroui/button";
+=======
+    CheckCircle2,
+    Clock,
+    MoreVertical
+} from 'lucide-react';
+import { updateFeedbackStatusRequest } from '@/store/feedback/action';
+>>>>>>> Stashed changes
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 
 const AdminFeedbackPage = () => {
     const dispatch = useDispatch<AppDispatch>();
     const router = useRouter();
+<<<<<<< Updated upstream
     const { feedbacks, loading, error } = useSelector((state: RootState) => state.feedback);
     const { isAuthenticated, user } = useSelector((state: RootState) => state.login);
+=======
+    const { feedbacks, loading, updating, error } = useSelector((state: any) => state.feedback);
+    const { isAuthenticated, user, loading: authLoading } = useSelector((state: RootState) => state.login);
+>>>>>>> Stashed changes
     const [search, setSearch] = useState('');
 
     useEffect(() => {
@@ -42,6 +55,7 @@ const AdminFeedbackPage = () => {
 
     const isLoading = loading && (!feedbacks || feedbacks.length === 0);
 
+<<<<<<< Updated upstream
     const filteredFeedbacks = (feedbacks || []).filter((f: Feedback) => {
         const query = search.toLowerCase();
         return (
@@ -50,6 +64,17 @@ const AdminFeedbackPage = () => {
             (f.user_email?.toLowerCase() || "").includes(query) ||
             (f.order_id?.toLowerCase() || "").includes(query) ||
             (f.status?.toLowerCase() || "").includes(query)
+=======
+    const filteredFeedbacks = (feedbacks || []).filter((f: any) => {
+        const searchTerm = search.toLowerCase();
+        const displayStatus = (f.status || 'Pending').toLowerCase() === 'in progress' ? 'read' : (f.status || 'Pending').toLowerCase();
+        return (
+            f.product_name?.toLowerCase().includes(searchTerm) ||
+            f.complaint?.toLowerCase().includes(searchTerm) ||
+            f.user_email?.toLowerCase().includes(searchTerm) ||
+            f.order_id?.toLowerCase().includes(searchTerm) ||
+            displayStatus.includes(searchTerm)
+>>>>>>> Stashed changes
         );
     });
 
@@ -173,6 +198,30 @@ const AdminFeedbackPage = () => {
                                                         <Hash size={10} className="text-gray-400" />
                                                         <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest leading-none">ORDER ID: {feedback.order_id?.slice(-8).toUpperCase()}</span>
                                                     </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-2 self-start relative">
+                                                    <select
+                                                        value={feedback.status || 'Pending'}
+                                                        disabled={updating}
+                                                        onChange={(e) => dispatch(updateFeedbackStatusRequest(feedback.id || feedback._id, e.target.value))}
+                                                        className={`text-[10px] font-black uppercase tracking-[0.15em] px-4 py-2 rounded-full border-2 transition-all cursor-pointer outline-none appearance-none hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed
+                                                            ${(feedback.status || 'Pending').toLowerCase() === 'pending'
+                                                                ? 'bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100'
+                                                                : (feedback.status || 'Pending').toLowerCase() === 'resolved'
+                                                                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
+                                                                    : 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100'
+                                                            }`}
+                                                    >
+                                                        <option value="Pending">PENDING</option>
+                                                        <option value="In Progress">READ</option>
+                                                        <option value="Resolved">RESOLVED</option>
+                                                    </select>
+                                                    {updating && (
+                                                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                                            <Loader2 size={10} className="animate-spin text-gray-400" />
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
 
