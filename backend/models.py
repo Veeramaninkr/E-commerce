@@ -157,11 +157,7 @@ class FeedbackCreate(BaseModel):
     product_image: Optional[str] = None
     user_email: EmailStr
     complaint: str
-<<<<<<< Updated upstream
     status: str = Field(default="pending")
-=======
-    status: str = Field(default="Pending")
->>>>>>> Stashed changes
 
 class FeedbackUpdate(BaseModel):
     status: Optional[str] = None

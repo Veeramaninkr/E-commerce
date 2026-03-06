@@ -178,16 +178,6 @@ async def get_feedback(feedback_id: str):
     if not ObjectId.is_valid(feedback_id):
         return None
     return await feedback_collection.find_one({"_id": ObjectId(feedback_id)})
-
-async def update_feedback(feedback_id: str, data: dict):
-    if not ObjectId.is_valid(feedback_id):
-        return None
-    data = {k: v for k, v in data.items() if v is not None}
-    if not data:
-        return await get_feedback(feedback_id)
-    await feedback_collection.update_one({"_id": ObjectId(feedback_id)}, {"$set": data})
-    return await get_feedback(feedback_id)
-
 async def get_feedbacks():
     feedbacks = []
     async for feedback in feedback_collection.find():
