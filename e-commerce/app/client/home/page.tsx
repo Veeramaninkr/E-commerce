@@ -14,6 +14,7 @@ import { Input, Textarea } from "@heroui/input"
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { addToWishlistRequest, fetchCollectionsRequest, createCollectionRequest } from '@/store/wishlist/action'
+import { ChatBot } from '@/components/ChatBot'
 
 
 function Page() {
@@ -454,6 +455,7 @@ function Page() {
                     )}
                 </ModalContent>
             </Modal>
+            <ChatBot />
         </div>
     )
 }
