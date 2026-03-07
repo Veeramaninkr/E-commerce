@@ -13,8 +13,11 @@ import os
 import uuid
 from fastapi.staticfiles import StaticFiles
 from fastapi import File, UploadFile
+from websocket import router as chat_router
 
 app = FastAPI()
+
+app.include_router(chat_router)
 
 UPLOAD_DIR = "uploads"
 if not os.path.exists(UPLOAD_DIR):
@@ -46,9 +49,7 @@ async def shutdown_event():
 
 origins = [
     "http://localhost:3000",
-    "http://localhost:3001",
     "http://127.0.0.1:3000",
-    "http://127.0.0.1:3001",
     "http://127.0.0.1:8000",
 ]
 
@@ -127,6 +128,19 @@ async def logout(response: Response):
 @app.get("/me", response_model=models.UserResponse)
 async def get_me(current_user: dict = Depends(get_current_user)):
     return current_user
+
+@app.get("/get-token")
+async def get_token(request: Request):
+    token = request.cookies.get("access_token")
+    if not token:
+        # Check header
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ")[1]
+            
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return {"token": token}
 
 # --- USERS ---
 @app.get("/users", response_model=List[models.UserResponse])

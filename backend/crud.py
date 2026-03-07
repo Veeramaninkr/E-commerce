@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from database import user_collection, product_collection, order_collection, asset_collection, feedback_collection
+from database import user_collection, product_collection, order_collection, asset_collection, feedback_collection, chat_collection
 import models
 from auth import get_password_hash
 from bson import ObjectId
@@ -297,3 +297,45 @@ async def delete_collection(collection_id: str):
     
     result = await collection_category_collection.delete_one({"_id": ObjectId(collection_id)})
     return result.deleted_count > 0
+
+# --- CHAT ---
+async def create_chat_message(message: models.ChatMessage):
+    msg_dict = message.model_dump()
+    result = await chat_collection.insert_one(msg_dict)
+    return await chat_collection.find_one({"_id": result.inserted_id})
+
+async def get_chat_history(user_email: str):
+    # For a client: messages they sent, or were sent specifically to them
+    # For an admin: messages they sent, or broadcasts (recipient=None)
+    # Actually, the current query is correct for clients. 
+    # For admins, we usually want history with a specific user, so we use the other function.
+    query = {
+        "$or": [
+            {"sender_email": user_email},
+            {"recipient_email": user_email}
+        ]
+    }
+    messages = []
+    async for msg in chat_collection.find(query).sort("timestamp", 1):
+        messages.append(msg)
+    return messages
+
+async def get_chat_history_between_users(admin_email: str, client_email: str):
+    # Messages from admin to client
+    # OR messages from client (where recipient is either this admin OR None)
+    query = {
+        "$or": [
+            {"sender_email": admin_email, "recipient_email": client_email},
+            {"sender_email": client_email, "recipient_email": admin_email},
+            {"sender_email": client_email, "recipient_email": None} # Broadcasts from client
+        ]
+    }
+    messages = []
+    async for msg in chat_collection.find(query).sort("timestamp", 1):
+        messages.append(msg)
+    return messages
+
+async def get_chat_users():
+    # Find all unique users who have sent messages (non-admin senders)
+    users = await chat_collection.distinct("sender_email", {"is_admin": False})
+    return users

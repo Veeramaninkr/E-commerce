@@ -1,4 +1,5 @@
 from typing import Optional, Any, List
+from datetime import datetime
 from bson import ObjectId
 from pydantic import BaseModel, Field, EmailStr, GetCoreSchemaHandler
 from pydantic_core import core_schema
@@ -194,6 +195,20 @@ class WishlistItemCreate(BaseModel):
     collection_id: Optional[str] = None
 
 class WishlistResponse(WishlistItemBase):
+    id: Optional[PyObjectId] = Field(alias="_id", default=None)
+
+
+class ChatMessage(BaseModel):
+    sender_email: EmailStr
+    recipient_email: Optional[EmailStr] = None  # None for broadcast to all admins
+    message: str
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    is_admin: bool = False
+
+    class Config:
+        populate_by_name = True
+
+class ChatMessageResponse(ChatMessage):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
 
     class Config:
