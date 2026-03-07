@@ -4,13 +4,15 @@ import { useRouter } from 'next/navigation';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store/store';
 import AddProduct from '../addpro/page';
-import { LayoutDashboard, PlusCircle, List, LogOut, ShieldUser, PrinterCheck, Users as UsersIcon, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, List, LogOut, ShieldUser, PrinterCheck, Users as UsersIcon, MessageSquare, MessageCircle } from 'lucide-react';
 import { logoutRequest, getMeRequest, getUsersRequest } from '@/store/login/action';
 import { fetchOrdersRequest } from '@/store/order/action';
 import View from '../view/page';
 import Orders from '../orders/page';
 import Users from '../users/page';
 import Feedback from '../feedback/page';
+import { AdminChat } from '@/components/AdminChat';
+
 
 
 
@@ -19,7 +21,7 @@ const AdminDashboard = () => {
     const dispatch = useDispatch();
     const { isAuthenticated, user, loading, users } = useSelector((state: any) => state.login);
     const { orders } = useSelector((state: any) => state.order);
-    type TabId = 'overview' | 'add' | 'view' | 'orders' | 'users' | 'feedback';
+    type TabId = 'overview' | 'add' | 'view' | 'orders' | 'users' | 'feedback' | 'chat';
     const [activeTab, setActiveTab] = useState<TabId>('overview');
 
     const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -46,17 +48,18 @@ const AdminDashboard = () => {
         if (!isAuthenticated) {
             dispatch(getMeRequest());
         }
-        dispatch(fetchOrdersRequest());
+        dispatch(fetchOrdersRequest(1, 10, {}));
         dispatch(getUsersRequest());
     }, [dispatch, isAuthenticated]);
 
     const navigationItems: { id: TabId, label: string, icon: any }[] = [
-        { id: 'overview', label: 'Overview', icon: ShieldUser },
+        { id: 'overview', label: 'Overview', icon: LayoutDashboard },
         { id: 'view', label: 'Collections', icon: List },
         { id: 'orders', label: 'Order Hub', icon: PrinterCheck },
         { id: 'add', label: 'New Product', icon: PlusCircle },
         { id: 'users', label: 'Users', icon: UsersIcon },
-        { id: 'feedback', label: 'Feedback', icon: MessageSquare },
+        { id: 'chat', label: 'Customer Chat', icon: MessageSquare },
+        { id: 'feedback', label: 'Feedback', icon: MessageCircle },
     ];
 
     return (
@@ -193,6 +196,7 @@ const AdminDashboard = () => {
                                     {activeTab === 'add' && <AddProduct />}
                                     {activeTab === 'orders' && <Orders />}
                                     {activeTab === 'users' && <Users />}
+                                    {activeTab === 'chat' && <AdminChat />}
                                     {activeTab === 'feedback' && <Feedback />}
                                 </div>
                             </div>
