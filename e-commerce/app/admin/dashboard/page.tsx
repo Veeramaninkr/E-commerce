@@ -11,6 +11,7 @@ import View from '../view/page';
 import Orders from '../orders/page';
 import Users from '../users/page';
 import Feedback from '../feedback/page';
+import Chat from '../chat/page';
 
 
 
@@ -19,7 +20,7 @@ const AdminDashboard = () => {
     const dispatch = useDispatch();
     const { isAuthenticated, user, loading, users } = useSelector((state: any) => state.login);
     const { orders } = useSelector((state: any) => state.order);
-    type TabId = 'overview' | 'add' | 'view' | 'orders' | 'users' | 'feedback';
+    type TabId = 'overview' | 'add' | 'view' | 'orders' | 'users' | 'feedback' | 'chat';
     const [activeTab, setActiveTab] = useState<TabId>('overview');
 
     const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -57,6 +58,7 @@ const AdminDashboard = () => {
         { id: 'add', label: 'New Product', icon: PlusCircle },
         { id: 'users', label: 'Users', icon: UsersIcon },
         { id: 'feedback', label: 'Feedback', icon: MessageSquare },
+        { id: 'chat', label: 'Live Chat', icon: MessageSquare },
     ];
 
     return (
@@ -194,6 +196,7 @@ const AdminDashboard = () => {
                                     {activeTab === 'orders' && <Orders />}
                                     {activeTab === 'users' && <Users />}
                                     {activeTab === 'feedback' && <Feedback />}
+                                    {activeTab === 'chat' && <Chat />}
                                 </div>
                             </div>
                         </div>

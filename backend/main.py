@@ -13,6 +13,7 @@ import os
 import uuid
 from fastapi.staticfiles import StaticFiles
 from fastapi import File, UploadFile
+import websocket
 
 app = FastAPI()
 
@@ -281,5 +282,39 @@ async def delete_user_collection(collection_id: str, current_user: dict = Depend
     if not await crud.delete_collection(collection_id):
         raise HTTPException(status_code=404, detail="Collection not found")
     return {"message": "Collection deleted"}
+
+
+# --- CHATS ---
+@app.get("/chats")
+async def get_chats(current_user: dict = Depends(get_current_user)):
+    if current_user.get("role") != "admin":
+         raise HTTPException(status_code=403, detail="Admin access required")
+    from database import chat_collection
+    chats = []
+    async for chat in chat_collection.find().sort("timestamp", 1):
+        chat["_id"] = str(chat["_id"])
+        chats.append(chat)
+    return chats
+    
+@app.get("/my-chats")
+async def get_my_chats(current_user: dict = Depends(get_current_user)):
+    from database import chat_collection
+    user_id = str(current_user["_id"])
+    chats = []
+    # Fetch all chats where the user is either the sender or receiver
+    async for chat in chat_collection.find({
+        "$or": [
+            {"sender": user_id},
+            {"receiver": user_id}
+        ]
+    }).sort("timestamp", 1):
+        chat["_id"] = str(chat["_id"])
+        chats.append(chat)
+    return chats
+
+
+# --- WEBSOCKETS ---
+app.add_api_websocket_route("/ws/{_id}", websocket.user_socket)
+
 
 

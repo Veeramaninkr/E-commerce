@@ -7,6 +7,8 @@ import { Input } from "@heroui/input"
 import { Card, CardBody, CardHeader, CardFooter } from "@heroui/card"
 import { ScrollShadow } from "@heroui/scroll-shadow"
 
+import { useSelector } from "react-redux"
+
 interface Message {
     id: string
     text: string
@@ -15,6 +17,7 @@ interface Message {
 }
 
 export const ChatBot = () => {
+    const [isMounted, setIsMounted] = useState(false)
     const [isOpen, setIsOpen] = useState(false)
     const [message, setMessage] = useState("")
     const [messages, setMessages] = useState<Message[]>([
@@ -22,20 +25,79 @@ export const ChatBot = () => {
             id: "1",
             text: "Hello! How can I help you today?",
             sender: "bot",
-            timestamp: new Date(),
+            timestamp: new Date("2024-01-01T00:00:00Z"),
         },
     ])
     const [isTyping, setIsTyping] = useState(false)
     const scrollRef = useRef<HTMLDivElement>(null)
+    const ws = useRef<WebSocket | null>(null)
+    const [clientId, setClientId] = useState<string>("")
+    const { user, isAuthenticated } = useSelector((state: any) => state.login)
 
-    useEffect(() => {``
+    useEffect(() => {
+        setIsMounted(true)
+
+        let id = "guest";
+        if (isAuthenticated && user?._id) {
+            id = user._id;
+        } else {
+            id = localStorage.getItem("chat_client_id") || `client_${Math.random().toString(36).substr(2, 9)}`;
+            localStorage.setItem("chat_client_id", id);
+        }
+
+        setClientId(id)
+
+        // Fetch history if authenticated
+        if (isAuthenticated) {
+            import('@/store/api').then(({ default: api }) => {
+                api.get("/my-chats")
+                    .then(res => {
+                        if (Array.isArray(res.data) && res.data.length > 0) {
+                            const historicMsgs: Message[] = res.data.map((m: any) => ({
+                                id: m._id,
+                                text: m.message,
+                                sender: (m.sender === id) ? "user" : "bot",
+                                timestamp: new Date(m.timestamp)
+                            }))
+                            setMessages(historicMsgs)
+                        }
+                    })
+                    .catch(err => console.error("Error fetching my chats:", err))
+            })
+        }
+
+        // Dynamic WS connection logic
+        const hostname = typeof window !== "undefined" ? window.location.hostname : "localhost";
+        const wsUrl = hostname === "127.0.0.1" ? "ws://127.0.0.1:8000" : "ws://localhost:8000";
+
+        // Connect to WebSocket
+        const socket = new WebSocket(`${wsUrl}/ws/${id}`)
+        ws.current = socket
+
+        socket.onmessage = (event) => {
+            const botMsg: Message = {
+                id: Date.now().toString(),
+                text: event.data,
+                sender: "bot",
+                timestamp: new Date(),
+            }
+            setMessages((prev) => [...prev, botMsg])
+        }
+
+        return () => {
+            socket.close()
+        }
+    }, [isAuthenticated, user])
+
+
+    useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight
         }
     }, [messages, isTyping])
 
     const handleSend = () => {
-        if (!message.trim()) return
+        if (!message.trim() || !ws.current) return
 
         const userMsg: Message = {
             id: Date.now().toString(),
@@ -45,21 +107,14 @@ export const ChatBot = () => {
         }
 
         setMessages((prev) => [...prev, userMsg])
-        setMessage("")
-        setIsTyping(true)
 
-        // Mock bot response
-        setTimeout(() => {
-            const botMsg: Message = {
-                id: (Date.now() + 1).toString(),
-                text: "Nanri",
-                sender: "bot",
-                timestamp: new Date(),
-            }
-            setMessages((prev) => [...prev, botMsg])
-            setIsTyping(false)
-        }, 1500)
+        // Send via WebSocket
+        ws.current.send(message)
+
+        setMessage("")
     }
+
+    if (!isMounted) return null
 
     return (
         <div className="fixed bottom-10 right-10 z-[1001]">
@@ -102,7 +157,7 @@ export const ChatBot = () => {
                                                     }`}>
                                                     {msg.sender === "user" ? <User size={16} /> : <Bot size={16} />}
                                                 </div>
-                                                <div className={`p-4 rounded-[20px] text-xs font-bold leading-relaxed ${msg.sender === "user"
+                                                <div className={`p-4 rounded-[20px] text-xs font-bold leading-relaxed whitespace-pre-wrap ${msg.sender === "user"
                                                     ? "bg-indigo-600 text-white rounded-tr-none shadow-lg shadow-indigo-500/20"
                                                     : "bg-white border border-gray-100 text-gray-800 rounded-tl-none shadow-sm"
                                                     }`}>

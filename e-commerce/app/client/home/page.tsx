@@ -315,6 +315,7 @@ function Page() {
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Your Identity</label>
                                         <Input
+                                            suppressHydrationWarning
                                             placeholder="NAME"
                                             variant="flat"
                                             radius="lg"
@@ -328,6 +329,7 @@ function Page() {
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Digital Address</label>
                                         <Input
+                                            suppressHydrationWarning
                                             placeholder="EMAIL"
                                             variant="flat"
                                             radius="lg"
@@ -343,6 +345,7 @@ function Page() {
                                 <div className="space-y-3">
                                     <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1">Your Message</label>
                                     <Textarea
+                                        suppressHydrationWarning
                                         placeholder="HOW CAN WE HELP YOU?"
                                         variant="flat"
                                         radius="lg"
@@ -355,7 +358,14 @@ function Page() {
                                     />
                                 </div>
 
-                                <Button color="primary" size="lg" radius="full" className="w-full h-16 font-black uppercase tracking-[0.2em] text-xs group" endContent={<Send className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" size={16} />}>
+                                <Button
+                                    suppressHydrationWarning
+                                    color="primary"
+                                    size="lg"
+                                    radius="full"
+                                    className="w-full h-16 font-black uppercase tracking-[0.2em] text-xs group"
+                                    endContent={<Send className="group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" size={16} />}
+                                >
                                     Send Transmission
                                 </Button>
                             </div>
