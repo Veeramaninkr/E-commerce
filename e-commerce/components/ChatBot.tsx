@@ -53,10 +53,25 @@ export const ChatBot = () => {
                 console.log("Chat connecting to WebSocket:", `${baseURL}/ws/${user.email}`)
                 const ws = new WebSocket(`${baseURL}/ws/${user._id}`)
 
+<<<<<<< Updated upstream
                 ws.onopen = () => {
                     console.log("Chat WebSocket connected")
                     setIsReady(true)
                     setIsConnecting(false)
+=======
+                ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data)
+                    setMessages((prev) => [
+                        ...prev,
+                        {
+                            id: data.id || Date.now().toString(),
+                            text: data.message,
+                            sender: data.is_admin ? "bot" : "user",
+                            timestamp: data.timestamp ? new Date(data.timestamp) : new Date()
+                        }
+                    ])
+                    if (data.is_admin) setIsTyping(false)
+>>>>>>> Stashed changes
                 }
 
                 ws.onmessage = (event) => {

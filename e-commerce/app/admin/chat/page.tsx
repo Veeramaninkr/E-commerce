@@ -61,6 +61,7 @@ const AdminChat = () => {
 
                     // If the message is from/to the selected user, update UI
                     if (data.sender === currentUser || data.receiver === currentUser) {
+<<<<<<< Updated upstream
                         setMessages((prev) => {
                             // Check if an identical message from the same sender in the last ~1000ms is already tracked
                             // This guards against duplicated websocket listeners in React Strict Mode locally
@@ -84,11 +85,27 @@ const AdminChat = () => {
                                 }
                             ]
                         })
+=======
+                        setMessages((prev) => [
+                            ...prev,
+                            {
+                                id: data.id || Date.now().toString(),
+                                text: data.message,
+                                sender: data.sender,
+                                receiver: data.receiver,
+                                is_admin: data.is_admin,
+                                timestamp: data.timestamp
+                            }
+                        ])
+>>>>>>> Stashed changes
                     }
 
-                    // Update user list if it's a new sender (not broadcast from fellow admin)
+                    // Update user list: bubble the sender to the top if it's a new or existing client
                     if (!data.is_admin) {
-                        setUsers((prev) => (prev.includes(data.sender) ? prev : [...prev, data.sender]))
+                        setUsers((prev) => {
+                            const others = prev.filter(u => u !== data.sender)
+                            return [data.sender, ...others]
+                        })
                     }
                 }
 
