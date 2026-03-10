@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from database import user_collection, product_collection, order_collection, asset_collection, feedback_collection
+from database import user_collection, product_collection, order_collection, asset_collection, feedback_collection, chat_collection
 import models
 from auth import get_password_hash
 from bson import ObjectId
@@ -297,3 +297,39 @@ async def delete_collection(collection_id: str):
     
     result = await collection_category_collection.delete_one({"_id": ObjectId(collection_id)})
     return result.deleted_count > 0
+
+# --- CHAT ---
+async def create_chat_message(message: models.ChatMessage):
+    m_dict = message.model_dump()
+    result = await chat_collection.insert_one(m_dict)
+    return result
+
+async def get_chat_history(email: str):
+    messages = []
+    cursor = chat_collection.find({
+        "$or": [
+            {"sender_email": email},
+            {"recipient_email": email}
+        ]
+    }).sort("timestamp", 1)
+    async for msg in cursor:
+        msg["_id"] = str(msg["_id"])
+        messages.append(msg)
+    return messages
+
+async def get_chat_history_between_users(admin_email: str, user_email: str):
+    messages = []
+    # Fetch anything where the user is involved (either sender or recipient)
+    cursor = chat_collection.find({
+        "$or": [
+            {"sender_email": user_email},
+            {"recipient_email": user_email}
+        ]
+    }).sort("timestamp", 1)
+    async for msg in cursor:
+        msg["_id"] = str(msg["_id"])
+        messages.append(msg)
+    return messages
+
+async def get_chat_users():
+    return await chat_collection.distinct("sender_email", {"is_admin": False})

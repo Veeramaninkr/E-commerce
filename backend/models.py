@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional, Any, List
 from bson import ObjectId
 from pydantic import BaseModel, Field, EmailStr, GetCoreSchemaHandler
@@ -195,6 +196,16 @@ class WishlistItemCreate(BaseModel):
 
 class WishlistResponse(WishlistItemBase):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
+
+    class Config:
+        populate_by_name = True
+
+class ChatMessage(BaseModel):
+    sender_email: EmailStr
+    recipient_email: Optional[EmailStr] = None
+    message: str
+    is_admin: bool = False
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
 
     class Config:
         populate_by_name = True

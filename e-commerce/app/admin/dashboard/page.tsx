@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store/store';
 import AddProduct from '../addpro/page';
-import { LayoutDashboard, PlusCircle, List, LogOut, ShieldUser, PrinterCheck, Users as UsersIcon, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, List, LogOut, ShieldUser, PrinterCheck, Users as UsersIcon, MessageSquare,MessageCircle } from 'lucide-react';
 import { logoutRequest, getMeRequest, getUsersRequest } from '@/store/login/action';
 import { fetchOrdersRequest } from '@/store/order/action';
 import View from '../view/page';
@@ -58,7 +58,7 @@ const AdminDashboard = () => {
         { id: 'add', label: 'New Product', icon: PlusCircle },
         { id: 'users', label: 'Users', icon: UsersIcon },
         { id: 'feedback', label: 'Feedback', icon: MessageSquare },
-        { id: 'chat', label: 'Live Chat', icon: MessageSquare },
+        { id: 'chat', label: 'Live Chat', icon: MessageCircle },
     ];
 
     return (

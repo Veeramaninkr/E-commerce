@@ -129,6 +129,17 @@ async def logout(response: Response):
 async def get_me(current_user: dict = Depends(get_current_user)):
     return current_user
 
+@app.get("/get-token")
+async def get_ws_token(request: Request):
+    token = request.cookies.get("access_token")
+    if not token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ")[1]
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    return {"token": token}
+
 # --- USERS ---
 @app.get("/users", response_model=List[models.UserResponse])
 async def read_users(current_user: dict = Depends(get_current_user)):
@@ -285,29 +296,40 @@ async def delete_user_collection(collection_id: str, current_user: dict = Depend
 
 
 # --- CHATS ---
-@app.get("/chats")
-async def get_chats(current_user: dict = Depends(get_current_user)):
+@app.get("/chat/users")
+async def get_chat_users(current_user: dict = Depends(get_current_user)):
     if current_user.get("role") != "admin":
          raise HTTPException(status_code=403, detail="Admin access required")
     from database import chat_collection
+    
+    # Get distinct senders who are not admin
+    users = await chat_collection.distinct("sender_email", {"is_admin": False})
+    
+    # Alternatively also get any users admins have sent messages to
+    # but distinct sender_email is usually enough to populate the queue
+    return users
+
+@app.get("/chat/history")
+async def get_chat_history(email: str, current_user: dict = Depends(get_current_user)):
+    if current_user.get("role") != "admin":
+         raise HTTPException(status_code=403, detail="Admin access required")
+    from database import chat_collection
+    query = {"$or": [{"sender_email": email}, {"recipient_email": email}]}
+    
     chats = []
-    async for chat in chat_collection.find().sort("timestamp", 1):
+    async for chat in chat_collection.find(query).sort("timestamp", 1):
         chat["_id"] = str(chat["_id"])
         chats.append(chat)
     return chats
-    
-@app.get("/my-chats")
-async def get_my_chats(current_user: dict = Depends(get_current_user)):
+
+@app.get("/chat")
+async def get_my_chat_history(current_user: dict = Depends(get_current_user)):
     from database import chat_collection
-    user_id = str(current_user["_id"])
+    email = current_user["email"]
+    query = {"$or": [{"sender_email": email}, {"recipient_email": email}]}
+
     chats = []
-    # Fetch all chats where the user is either the sender or receiver
-    async for chat in chat_collection.find({
-        "$or": [
-            {"sender": user_id},
-            {"receiver": user_id}
-        ]
-    }).sort("timestamp", 1):
+    async for chat in chat_collection.find(query).sort("timestamp", 1):
         chat["_id"] = str(chat["_id"])
         chats.append(chat)
     return chats

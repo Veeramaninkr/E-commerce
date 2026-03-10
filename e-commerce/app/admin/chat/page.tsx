@@ -1,271 +1,284 @@
 "use client"
 import React, { useState, useEffect, useRef } from "react"
-import { useSelector } from "react-redux"
+import { Search, Send, User, MessageSquare, Loader2 } from "lucide-react"
+import { Button } from "@heroui/button"
 import api from "@/store/api"
+import { motion, AnimatePresence } from "framer-motion"
+import { ScrollShadow } from "@heroui/scroll-shadow"
 
-interface ChatMessage {
-    _id: string
+interface Message {
+    id: string
+    text: string
     sender: string
-    receiver: string
-    message: string
+    receiver?: string
+    is_admin: boolean
     timestamp: string
-    sender_name?: string
-    sender_email?: string
 }
 
-export default function AdminChat() {
-    const [messages, setMessages] = useState<ChatMessage[]>([])
-    const [groupedChats, setGroupedChats] = useState<{ [clientId: string]: ChatMessage[] }>({})
-    const [selectedClient, setSelectedClient] = useState<string | null>(null)
-    const [replyText, setReplyText] = useState("")
-    const [ws, setWs] = useState<WebSocket | null>(null)
+const AdminChat = () => {
+    const [users, setUsers] = useState<string[]>([])
+    const [searchQuery, setSearchQuery] = useState("")
+    const [selectedUser, setSelectedUser] = useState<string | null>(null)
+    const [messages, setMessages] = useState<Message[]>([])
+    const [input, setInput] = useState("")
+    const [loading, setLoading] = useState(true)
+    const [isReady, setIsReady] = useState(false)
+    const socketRef = useRef<WebSocket | null>(null)
+    const selectedUserRef = useRef<string | null>(null)
     const scrollRef = useRef<HTMLDivElement>(null)
 
-    // Grab user from Redux store which is populated by AdminDashboard anyway
-    const { user, isAuthenticated } = useSelector((state: any) => state.login)
-
+    // Update ref whenever selectedUser changes
     useEffect(() => {
-        if (!isAuthenticated || !user) return;
+        selectedUserRef.current = selectedUser
+    }, [selectedUser])
 
-        // Check role - support both "admin" and potentially "ADMIN"
-        const role = user.role || user.Role;
-        if (role?.toLowerCase() !== "admin") {
-            console.log("Not an admin, role is:", role);
-            return;
-        }
-
-        // Fetch past chats
-        api.get("/chats")
-            .then(res => {
-                if (Array.isArray(res.data)) {
-                    setMessages(res.data)
-                }
-            })
-            .catch(err => console.error("Error fetching chats:", err))
-
-        const hostname = typeof window !== "undefined" ? window.location.hostname : "localhost";
-        const wsUrl = hostname === "127.0.0.1" ? "ws://127.0.0.1:8000" : "ws://localhost:8000";
-
-        // Prioritize _id (mongo format) over id
-        const adminId = user._id || user.id || "admin"
-        console.log("Connecting Admin WebSocket with ID:", adminId);
-
-        const socket = new WebSocket(`${wsUrl}/ws/${adminId}`)
-
-        socket.onopen = () => console.log("Admin WebSocket connected");
-        socket.onerror = (err) => console.error("Admin WebSocket error:", err);
-
-        socket.onmessage = (event) => {
-            console.log("Admin received message:", event.data);
+    // WebSocket Persistence
+    useEffect(() => {
+        const connect = async () => {
+            setLoading(true)
             try {
-                const data = JSON.parse(event.data)
+                // 1. Fetch users queue
+                const usersRes = await api.get("/chat/users")
+                setUsers(usersRes.data)
 
-                if (data.is_admin_sending) {
-                    const newMsg: ChatMessage = {
-                        _id: `admin-broadcast-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-                        sender: "admin",
-                        receiver: data.client_id,
-                        message: data.message,
-                        timestamp: new Date().toISOString(),
-                        sender_name: data.username,
-                        sender_email: data.useremail
-                    }
-                    setMessages(prev => [...prev, newMsg])
-                } else if (data.client_id) {
-                    // It's a client-sent message
-                    const newMsg: ChatMessage = {
-                        _id: `client-msg-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-                        sender: data.client_id,
-                        receiver: "admin",
-                        message: data.message,
-                        timestamp: new Date().toISOString(),
-                        sender_name: data.username,
-                        sender_email: data.useremail
-                    }
-                    setMessages(prev => [...prev, newMsg])
+                // 2. Connect WebSocket
+                let baseURL = api.defaults.baseURL?.replace("http", "ws") ||
+                    (typeof window !== "undefined" ? `ws://${window.location.hostname}:8000` : "ws://localhost:8000")
+                baseURL = baseURL.replace(/\/$/, "")
+
+                console.log("Admin connecting to WebSocket:", `${baseURL}/ws/admin`)
+                const ws = new WebSocket(`${baseURL}/ws/admin`)
+
+                ws.onopen = () => {
+                    console.log("Admin Chat connected")
+                    setIsReady(true)
+                    setLoading(false)
                 }
-            } catch (e) {
-                // Fallback for non-JSON or malformed messages
-                if (typeof event.data === "string" && event.data.includes(":")) {
-                    const [clientId, ...rest] = event.data.split(":");
-                    const msg = rest.join(":");
-                    const newMsg: ChatMessage = {
-                        _id: `fallback-${Date.now()}`,
-                        sender: clientId,
-                        receiver: "admin",
-                        message: msg,
-                        timestamp: new Date().toISOString()
+
+                ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data)
+                    const currentUser = selectedUserRef.current
+
+                    // If the message is from/to the selected user, update UI
+                    if (data.sender === currentUser || data.receiver === currentUser) {
+                        setMessages((prev) => {
+                            // Check if an identical message from the same sender in the last ~1000ms is already tracked
+                            // This guards against duplicated websocket listeners in React Strict Mode locally
+                            const isDuplicate = prev.some(
+                                (m) => m.text === data.message &&
+                                    m.sender === data.sender &&
+                                    Math.abs(new Date(m.timestamp).getTime() - new Date(data.timestamp || new Date()).getTime()) < 1000
+                            )
+
+                            if (isDuplicate) return prev;
+
+                            return [
+                                ...prev,
+                                {
+                                    id: Date.now().toString() + Math.random().toString(),
+                                    text: data.message,
+                                    sender: data.sender,
+                                    receiver: data.receiver,
+                                    is_admin: data.is_admin,
+                                    timestamp: data.timestamp || new Date().toISOString()
+                                }
+                            ]
+                        })
                     }
-                    setMessages(prev => [...prev, newMsg])
+
+                    // Update user list if it's a new sender (not broadcast from fellow admin)
+                    if (!data.is_admin) {
+                        setUsers((prev) => (prev.includes(data.sender) ? prev : [...prev, data.sender]))
+                    }
                 }
+
+                ws.onerror = (e) => {
+                    console.error("Admin WebSocket error connection failed.", e)
+                }
+                ws.onclose = (event) => {
+                    console.log(`Admin Chat closed (Code: ${event.code})`)
+                    socketRef.current = null
+                    setIsReady(false)
+                }
+
+                socketRef.current = ws
+            } catch (err) {
+                console.error("Admin Chat setup failed:", err)
+                setLoading(false)
             }
         }
 
-        setWs(socket)
-
+        connect()
         return () => {
-            console.log("Closing Admin WebSocket");
-            socket.close();
+            socketRef.current?.close()
+            socketRef.current = null
+            setIsReady(false)
+        }
+    }, [])
+
+    // Load History when user selected
+    useEffect(() => {
+        if (!selectedUser) {
+            setMessages([])
+            return
         }
 
-    }, [isAuthenticated, user])
-
-
-    useEffect(() => {
-        // Group messages by client. 
-        // A message belongs to a client if either sender or receiver is that client.
-        // We know "admin" and "bot" are NOT the client.
-        const grouped: { [key: string]: ChatMessage[] } = {}
-        messages.forEach(msg => {
-            let client = "";
-
-            if (msg.sender !== "admin" && msg.sender !== "bot") {
-                client = msg.sender;
-            } else if (msg.receiver !== "admin" && msg.receiver !== "bot") {
-                client = msg.receiver;
+        const fetchHistory = async () => {
+            try {
+                const res = await api.get(`/chat/history?email=${selectedUser}`)
+                const history = res.data.map((h: any) => ({
+                    id: h._id,
+                    text: h.message,
+                    sender: h.sender_email,
+                    receiver: h.recipient_email,
+                    is_admin: h.is_admin,
+                    timestamp: h.timestamp
+                }))
+                setMessages(history)
+            } catch (err) {
+                console.error("Failed to fetch history:", err)
             }
-
-            if (client) {
-                if (!grouped[client]) grouped[client] = []
-                grouped[client].push(msg)
-            }
-        })
-        setGroupedChats(grouped)
-    }, [messages])
+        }
+        fetchHistory()
+    }, [selectedUser])
 
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight
         }
-    }, [groupedChats, selectedClient])
+    }, [messages])
 
     const handleSend = () => {
-        if (!replyText.trim() || !selectedClient || !ws) return
+        if (!input.trim() || !selectedUser) return
 
-        // Admin format to send to client: "clientId:message"
-        ws.send(`${selectedClient}:${replyText}`)
-        setReplyText("")
+        if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
+            console.error("Admin WebSocket not ready")
+            return
+        }
+
+        socketRef.current.send(`${selectedUser}:${input}`)
+        setInput("")
     }
 
-    const clients = Object.keys(groupedChats)
+    const filteredUsers = users.filter((u: string) => u.toLowerCase().includes(searchQuery.toLowerCase()))
 
     return (
-        <div className="flex h-[85vh] bg-white rounded-[32px] overflow-hidden shadow-[0_20px_60px_-15px_rgba(0,0,0,0.03)] border border-gray-100 font-sans mt-4">
-            {/* Sidebar */}
-            <div className="w-1/3 bg-gray-50/50 border-r border-gray-100 flex flex-col">
-                <div className="p-6 bg-white border-b border-gray-100 flex-shrink-0">
-                    <h2 className="text-sm font-black text-gray-900 tracking-widest uppercase mb-1">Live Communications</h2>
-                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Active Client Sessions</p>
+        <div className="flex bg-white rounded-[40px] border border-gray-100 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.03)] h-[calc(130vh-200px)] overflow-hidden">
+            {/* User List Side */}
+            <div className="w-1/3 border-r border-gray-50 flex flex-col pt-8 bg-gray-50/10">
+                <div className="px-8 pb-6 border-b border-gray-50 bg-white">
+                    <h2 className="text-2xl font-black text-gray-900 tracking-tighter uppercase mb-4 italic">Support Queue</h2>
+                    <div className="relative group">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-600 duration-300" size={16} />
+                        <input
+                            placeholder="SEARCH USERS..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-12 pr-4 py-3 bg-gray-100 rounded-2xl border-none outline-none text-[10px] font-black uppercase tracking-widest placeholder:text-gray-300 focus:ring-2 focus:ring-indigo-100 transition-all"
+                        />
+                    </div>
                 </div>
-                <div className="flex-1 overflow-y-auto no-scrollbar">
-                    {clients.length === 0 ? (
-                        <div className="p-10 text-gray-400 text-xs font-black uppercase tracking-widest text-center">No active chats</div>
+
+                <div className="flex-1 overflow-y-auto no-scrollbar py-4">
+                    {loading ? (
+                        <div className="flex justify-center p-12">
+                            <Loader2 className="animate-spin text-indigo-200" />
+                        </div>
+                    ) : filteredUsers.length === 0 ? (
+                        <div className="text-center py-20 px-8">
+                            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6 text-gray-300">
+                                <MessageSquare size={32} />
+                            </div>
+                            <p className="text-[10px] font-black uppercase text-gray-300 tracking-widest">No active sessions</p>
+                        </div>
                     ) : (
-                        clients.map(client => {
-                            const clientMsgs = groupedChats[client];
-                            const lastMessage = clientMsgs[clientMsgs.length - 1];
-                            const isSelected = selectedClient === client;
-
-                            // Find any message that has metadata for this client
-                            const metadata = clientMsgs.find(m => m.sender === client && m.sender_name);
-                            const displayName = metadata?.sender_name || client;
-                            const displayEmail = metadata?.sender_email || "No Email";
-
-                            return (
-                                <div
-                                    key={client}
-                                    onClick={() => setSelectedClient(client)}
-                                    className={`p-6 border-b border-gray-100 cursor-pointer transition-all duration-300 relative group
-                                        ${isSelected ? "bg-white" : "hover:bg-white/60"}
-                                    `}
-                                >
-                                    {isSelected && <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-600 rounded-r-lg"></div>}
-                                    <div className="flex flex-col gap-1">
-                                        <h3 className={`text-xs font-black tracking-tight truncate ${isSelected ? 'text-indigo-600' : 'text-gray-900 group-hover:text-indigo-500'}`}>
-                                            {displayName}
-                                        </h3>
-                                        <p className="text-[9px] text-gray-400 font-bold uppercase truncate">{displayEmail}</p>
-                                        <p className={`text-[10px] font-bold uppercase tracking-wide truncate mt-1 ${isSelected ? 'text-gray-500' : 'text-gray-400'}`}>
-                                            {lastMessage?.message || "..."}
-                                        </p>
-                                    </div>
+                        filteredUsers.map((email: string) => (
+                            <button
+                                key={email}
+                                onClick={() => setSelectedUser(email)}
+                                className={`w-full px-8 py-6 flex items-center gap-4 border-b border-gray-50 transition-all duration-300 text-left ${selectedUser === email ? 'bg-indigo-600' : 'hover:bg-gray-50'}`}
+                            >
+                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${selectedUser === email ? 'bg-white/20 text-white' : 'bg-gray-900 text-white'}`}>
+                                    <User size={20} />
                                 </div>
-                            )
-                        })
+                                <div className="flex-1 overflow-hidden">
+                                    <p className={`text-xs font-black truncate uppercase tracking-tighter ${selectedUser === email ? 'text-white' : 'text-gray-900'}`}>{email}</p>
+                                </div>
+                            </button>
+                        ))
                     )}
                 </div>
             </div>
 
-            {/* Chat Area */}
-            <div className="flex-1 flex flex-col bg-white relative">
-                {selectedClient ? (
+            {/* Chat Area Side */}
+            <div className="flex-1 flex flex-col h-100% bg-white">
+                {selectedUser ? (
                     <>
-                        {/* Chat Header */}
-                        <div className="px-8 py-6 bg-white border-b border-gray-100 flex items-center justify-between flex-shrink-0 z-10">
-                            <div className="flex flex-col gap-1">
-                                <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Currently Assisting</h2>
-                                <p className="text-sm font-black text-indigo-600 tracking-tight leading-normal">
-                                    {groupedChats[selectedClient]?.find(m => m.sender === selectedClient && m.sender_name)?.sender_name || selectedClient}
-                                </p>
-                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wide">
-                                    {groupedChats[selectedClient]?.find(m => m.sender === selectedClient && m.sender_email)?.sender_email || "Private Client"}
-                                </p>
-                            </div>
-                            <div className="w-8 h-8 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center">
-                                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                        {/* Header */}
+                        <div className="px-10 py-8 bg-white border-b border-gray-50 flex items-center justify-between shadow-sm relative z-10">
+                            <div className="flex items-center gap-4">
+                                <div className="w-14 h-14 rounded-[20px] bg-indigo-600 flex items-center justify-center text-white shadow-xl shadow-indigo-100">
+                                    <User size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-black text-gray-900 tracking-tighter uppercase leading-none">{selectedUser}</h3>
+                                    <div className="flex items-center gap-2 mt-2">                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Chat Messages */}
-                        <div ref={scrollRef} className="flex-1 overflow-y-auto p-8 space-y-6 bg-gray-50/30">
-                            {groupedChats[selectedClient]?.map(msg => {
-                                const isAdminMsg = msg.sender === "bot" || msg.sender === "admin";
-                                return (
-                                    <div key={msg._id} className={`flex ${isAdminMsg ? "justify-end" : "justify-start"}`}>
-                                        <div className={`max-w-[70%] relative group animate-in fade-in slide-in-from-bottom-2 duration-300`}>
-                                            <div className={`p-5 rounded-[24px] text-xs font-bold leading-relaxed shadow-sm whitespace-pre-wrap
-                                                ${isAdminMsg
-                                                    ? "bg-indigo-600 text-white rounded-br-sm"
-                                                    : "bg-white text-gray-800 border border-gray-100 rounded-bl-sm"}
-                                            `}>
-                                                {msg.message}
-                                            </div>
-                                            <div className={`opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-[9px] mt-2 font-black uppercase tracking-widest text-gray-400 absolute ${isAdminMsg ? "right-2" : "left-2"}`}>
+                        {/* Messages Body */}
+                        <ScrollShadow ref={scrollRef} className="flex-1 p-10 bg-[#f8f9fc] space-y-6 overflow-y-auto no-scrollbar">
+                            <AnimatePresence>
+                                {messages.map((msg, i) => (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        key={i}
+                                        className={`flex ${msg.is_admin ? 'justify-end' : 'justify-start'}`}
+                                    >
+                                        <div className={`max-w-[75%] p-6 rounded-[28px] text-[11px] font-bold leading-relaxed shadow-sm ${msg.is_admin ? 'bg-gray-900 text-white rounded-tr-none' : 'bg-white border border-gray-100 text-gray-800 rounded-tl-none shadow-indigo-500/5'
+                                            }`}>                    
+                                            {msg.text}
+                                            <div className={`text-[8px] font-black uppercase tracking-widest mt-3 opacity-30 ${msg.is_admin ? 'text-white' : 'text-gray-900'}`}>
                                                 {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </div>
                                         </div>
-                                    </div>
-                                )
-                            })}
-                        </div>
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
+                        </ScrollShadow>
 
-                        {/* Chat Input */}
-                        <div className="p-6 bg-white border-t border-gray-100 flex-shrink-0 z-10">
-                            <div className="flex gap-4 p-2 bg-gray-50 border border-gray-100 rounded-[20px] focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-100 transition-all">
+                        {/* Input Footer */}
+                        <div className="px-10 py-10 bg-white border-t border-gray-50">
+                            <div className="bg-gray-50 p-2 rounded-[28px] border border-gray-100 focus-within:border-indigo-600 focus-within:ring-4 focus-within:ring-indigo-100 transition-all flex items-center gap-3">
                                 <input
-                                    type="text"
-                                    value={replyText}
-                                    onChange={(e) => setReplyText(e.target.value)}
+                                    value={input}
+                                    onChange={(e) => setInput(e.target.value)}
                                     onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                                    className="flex-1 bg-transparent border-none outline-none px-4 text-xs font-black uppercase tracking-widest text-gray-900 placeholder:text-gray-300"
-                                    placeholder="TYPE YOUR MESSAGE..."
+                                    placeholder={isReady ? "TYPE YOUR ASSISTANCE..." : "CONNECTING..."}
+                                    disabled={!isReady}
+                                    className="flex-1 bg-transparent border-none outline-none px-6 py-4 text-[10px] font-black uppercase tracking-widest text-gray-900 placeholder:text-gray-300 disabled:opacity-50"
                                 />
-                                <button
+                                <Button
                                     onClick={handleSend}
-                                    disabled={!replyText.trim()}
-                                    className="bg-indigo-600 disabled:opacity-50 text-white px-8 h-12 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-indigo-200 hover:bg-indigo-500 transition-all active:scale-95"
+                                    isIconOnly
+                                    disabled={!isReady}
+                                    isLoading={loading && !isReady}
+                                    className="h-14 w-14 rounded-[22px] bg-gray-900 text-white shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
                                 >
-                                    Send
-                                </button>
+                                    {!loading && <Send size={20} />}
+                                </Button>
                             </div>
                         </div>
                     </>
                 ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center bg-gray-50/50">
-                        <div className="w-24 h-24 bg-white rounded-[32px] border border-gray-100 shadow-sm flex items-center justify-center mb-6">
-                            <div className="w-10 h-10 border-[3px] border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
+                    <div className="h-full flex flex-col items-center justify-center opacity-40 bg-[#f8f9fc]">
+                        <div className="w-32 h-32 rounded-[48px] border-4 border-dashed border-gray-300 flex items-center justify-center mb-10 rotate-12 bg-white">
+                            <MessageSquare size={48} className="text-gray-300" />
                         </div>
-                        <p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.3em]">Awaiting Selection</p>
+                        <h2 className="text-4xl font-black text-gray-400 tracking-tighter uppercase italic">Select Client Session</h2>
+                        <p className="text-[10px] font-black uppercase text-gray-400 tracking-[0.4em] mt-4">Initiate real-time assistance</p>
                     </div>
                 )}
             </div>
@@ -273,3 +286,4 @@ export default function AdminChat() {
     )
 }
 
+export default AdminChat
