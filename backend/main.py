@@ -14,6 +14,7 @@ import uuid
 from fastapi.staticfiles import StaticFiles
 from fastapi import File, UploadFile
 import websocket
+import onesingnal
 
 app = FastAPI()
 
@@ -338,5 +339,4 @@ async def get_my_chat_history(current_user: dict = Depends(get_current_user)):
 # --- WEBSOCKETS ---
 app.add_api_websocket_route("/ws/{_id}", websocket.user_socket)
 
-
-
+app.include_router(onesingnal.router)

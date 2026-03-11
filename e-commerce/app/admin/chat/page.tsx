@@ -3,8 +3,12 @@ import React, { useState, useEffect, useRef } from "react"
 import { Search, Send, User, MessageSquare, Loader2 } from "lucide-react"
 import { Button } from "@heroui/button"
 import api from "@/store/api"
+import { useSelector } from "react-redux"
+import { RootState } from "@/store/store"
+import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { ScrollShadow } from "@heroui/scroll-shadow"
+import OneSignal from "react-onesignal";
 
 interface Message {
     id: string
@@ -14,6 +18,9 @@ interface Message {
     is_admin: boolean
     timestamp: string
 }
+
+const ONE_SIGNAL_APP_ID = "2380f755-4e67-48ac-b906-6c680d6c67a1";
+let isOneSignalInitialized = false;
 
 const AdminChat = () => {
     const [users, setUsers] = useState<string[]>([])
@@ -26,6 +33,41 @@ const AdminChat = () => {
     const socketRef = useRef<WebSocket | null>(null)
     const selectedUserRef = useRef<string | null>(null)
     const scrollRef = useRef<HTMLDivElement>(null)
+    const { isAuthenticated, user: authUser, loading: authLoading } = useSelector((state: RootState) => state.login)
+    const router = useRouter()
+
+    // Authentication Guard
+    useEffect(() => {
+        if (!authLoading) {
+            if (!isAuthenticated) {
+                router.replace('/');
+            } else if (authUser?.role !== 'admin') {
+                router.replace('/client/home');
+            }
+        }
+    }, [isAuthenticated, authUser, authLoading, router]);
+
+    useEffect(() => {
+        const initOneSignal = async () => {
+            if (isOneSignalInitialized) return;
+            try {
+                await OneSignal.init({
+                    appId: ONE_SIGNAL_APP_ID,
+                    allowLocalhostAsSecureOrigin: true,
+                });
+                isOneSignalInitialized = true;
+                const playerId = OneSignal.User.PushSubscription.id;
+                console.log("OneSignal Player ID:", playerId);
+            } catch (error: any) {
+                if (error?.message?.includes("already initialized")) {
+                    isOneSignalInitialized = true;
+                    return;
+                }
+                console.error("OneSignal init error:", error);
+            }
+        };
+        initOneSignal();
+    }, []);
 
     // Update ref whenever selectedUser changes
     useEffect(() => {
@@ -61,7 +103,6 @@ const AdminChat = () => {
 
                     // If the message is from/to the selected user, update UI
                     if (data.sender === currentUser || data.receiver === currentUser) {
-<<<<<<< Updated upstream
                         setMessages((prev) => {
                             // Check if an identical message from the same sender in the last ~1000ms is already tracked
                             // This guards against duplicated websocket listeners in React Strict Mode locally
@@ -85,19 +126,6 @@ const AdminChat = () => {
                                 }
                             ]
                         })
-=======
-                        setMessages((prev) => [
-                            ...prev,
-                            {
-                                id: data.id || Date.now().toString(),
-                                text: data.message,
-                                sender: data.sender,
-                                receiver: data.receiver,
-                                is_admin: data.is_admin,
-                                timestamp: data.timestamp
-                            }
-                        ])
->>>>>>> Stashed changes
                     }
 
                     // Update user list: bubble the sender to the top if it's a new or existing client
@@ -179,6 +207,14 @@ const AdminChat = () => {
 
     const filteredUsers = users.filter((u: string) => u.toLowerCase().includes(searchQuery.toLowerCase()))
 
+    if (authLoading || !isAuthenticated || authUser?.role !== 'admin') {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50/10">
+                <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+        )
+    }
+
     return (
         <div className="flex bg-white rounded-[40px] border border-gray-100 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.03)] h-[calc(130vh-200px)] overflow-hidden">
             {/* User List Side */}
@@ -255,7 +291,7 @@ const AdminChat = () => {
                                         className={`flex ${msg.is_admin ? 'justify-end' : 'justify-start'}`}
                                     >
                                         <div className={`max-w-[75%] p-6 rounded-[28px] text-[11px] font-bold leading-relaxed shadow-sm ${msg.is_admin ? 'bg-gray-900 text-white rounded-tr-none' : 'bg-white border border-gray-100 text-gray-800 rounded-tl-none shadow-indigo-500/5'
-                                            }`}>                    
+                                            }`}>
                                             {msg.text}
                                             <div className={`text-[8px] font-black uppercase tracking-widest mt-3 opacity-30 ${msg.is_admin ? 'text-white' : 'text-gray-900'}`}>
                                                 {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
